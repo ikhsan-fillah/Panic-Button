@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
-  runApp(const MainApp());
+import 'core/theme/app_theme.dart';
+import 'core/routes/app_routes.dart';
+import 'core/bindings/initial_binding.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(const PanicButtonApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class PanicButtonApp extends StatelessWidget {
+  const PanicButtonApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+    return GetMaterialApp(
+      title: 'Panic Button',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      initialRoute: AppRoutes.splash,
+      getPages: AppRoutes.pages,
+      initialBinding: InitialBinding(),
     );
   }
 }
