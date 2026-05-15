@@ -2,7 +2,7 @@ const app = require('./src/app');
 const pool = require('./src/config/db');
 require('dotenv').config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 88080;
 
 pool.getConnection()
   .then((connection) => {

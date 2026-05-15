@@ -3,7 +3,7 @@ const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
-const upload = require('../middleware/uploadMiddleware');
+const { upload, uploadToGCS } = require('../middleware/uploadMiddleware');
 
 const authController = require('../controllers/authController');
 const laporanController = require('../controllers/laporanController');
@@ -30,7 +30,7 @@ router.get('/laporan/user', authMiddleware, roleMiddleware('warga'), laporanCont
 router.get('/laporan/:id', authMiddleware, roleMiddleware('warga', 'satpam'), laporanController.show);
 router.put('/laporan/:id', authMiddleware, roleMiddleware('satpam'), laporanController.update);
 router.put('/laporan/:id/cancel', authMiddleware, roleMiddleware('warga'), laporanController.cancel);
-router.post('/laporan/:id/foto', authMiddleware, roleMiddleware('warga'), upload.single('foto'), laporanController.uploadFoto);
+router.post('/laporan/:id/foto', authMiddleware, roleMiddleware('warga'), upload.single('foto'), uploadToGCS, laporanController.uploadFoto);
 
 
 // KATEGORI

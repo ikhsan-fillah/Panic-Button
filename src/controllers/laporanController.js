@@ -130,10 +130,14 @@ exports.cancel = async (req, res) => {
 
 exports.uploadFoto = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'File foto wajib diupload' });
-    const fotoPath = `/uploads/${req.file.filename}`;
-    await pool.query('UPDATE laporan SET foto = ? WHERE id = ?', [fotoPath, req.params.id]);
-    res.json({ message: 'Foto berhasil diupload', foto: fotoPath });
+    if (!req.file || !req.file.gcsUrl) {
+      return res.status(400).json({ message: 'File foto wajib diupload' });
+    }
+
+    const fotoUrl = req.file.gcsUrl;
+    await pool.query('UPDATE laporan SET foto = ? WHERE id = ?', [fotoUrl, req.params.id]);
+
+    res.json({ message: 'Foto berhasil diupload', foto: fotoUrl });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
