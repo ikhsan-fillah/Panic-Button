@@ -29,13 +29,20 @@ class ApiService extends GetxService {
         onRequest: (options, handler) async {
           final prefs = await SharedPreferences.getInstance();
           final token = prefs.getString(AppConstants.tokenKey);
-          if (token != null) {
+          if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           return handler.next(options);
         },
-        onError: (error, handler) {
+        onResponse: (response, handler) {
+          return handler.next(response);
+        },
+        onError: (DioException error, handler) async {
+          // Auto logout jika token expired
           if (error.response?.statusCode == 401) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove(AppConstants.tokenKey);
+            await prefs.remove(AppConstants.userKey);
             Get.offAllNamed('/login');
           }
           return handler.next(error);
@@ -46,5 +53,9 @@ class ApiService extends GetxService {
 
   void updateToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';
+  }
+
+  void clearToken() {
+    _dio.options.headers.remove('Authorization');
   }
 }

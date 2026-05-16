@@ -14,6 +14,15 @@ class AuthController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
 
+  // Expose user data ke seluruh app
+  UserModel? get user => _auth.currentUser.value;
+  int? get userId => _auth.userId;
+  String? get userName => _auth.userName;
+
+  // ----------------------------------------------------------
+  // LOGIN
+  // POST /auth/login
+  // ----------------------------------------------------------
   Future<void> login(String email, String password) async {
     isLoading.value = true;
     errorMessage.value = '';
@@ -22,15 +31,17 @@ class AuthController extends GetxController {
         'email': email,
         'password': password,
       });
+
       final token = res.data['token'];
       final user = UserModel.fromJson(res.data['user']);
+
+      // Simpan token ke Dio & SharedPreferences
       _api.updateToken(token);
       await _auth.saveSession(token, user);
-      if (_firebase.fcmToken != null) {
-        await _api.dio.post('/notifikasi/fcm-token', data: {
-          'fcm_token': _firebase.fcmToken,
-        });
-      }
+
+      // Kirim FCM token ke backend setelah login
+      await _saveFcmToken();
+
       Get.offAllNamed(AppRoutes.home);
     } on DioException catch (e) {
       errorMessage.value = e.response?.data['message'] ?? 'Login gagal. Coba lagi.';
@@ -39,6 +50,10 @@ class AuthController extends GetxController {
     }
   }
 
+  // ----------------------------------------------------------
+  // REGISTER
+  // POST /auth/register
+  // ----------------------------------------------------------
   Future<void> register({
     required String name,
     required String email,
@@ -56,19 +71,58 @@ class AuthController extends GetxController {
         'role': 'warga',
       });
       Get.offAllNamed(AppRoutes.login);
-      Get.snackbar('Berhasil', 'Akun berhasil dibuat. Silahkan login.');
+      Get.snackbar(
+        'Berhasil! 🎉',
+        'Akun berhasil dibuat. Silakan login.',
+        duration: const Duration(seconds: 3),
+      );
     } on DioException catch (e) {
-      errorMessage.value = e.response?.data['message'] ?? 'Registrasi gagal.';
+      errorMessage.value = e.response?.data['message'] ?? 'Registrasi gagal. Coba lagi.';
     } finally {
       isLoading.value = false;
     }
   }
 
+  // ----------------------------------------------------------
+  // LOGOUT
+  // POST /auth/logout
+  // ----------------------------------------------------------
   Future<void> logout() async {
     try {
       await _api.dio.post('/auth/logout');
-    } catch (_) {}
+    } catch (_) {
+      // Tetap logout meski request gagal
+    }
     await _auth.clearSession();
     Get.offAllNamed(AppRoutes.login);
+  }
+
+  // ----------------------------------------------------------
+  // GET ME — refresh data user dari server
+  // GET /auth/me
+  // ----------------------------------------------------------
+  Future<void> getMe() async {
+    try {
+      final res = await _api.dio.get('/auth/me');
+      final user = UserModel.fromJson(res.data['user'] ?? res.data);
+      await _auth.saveSession(_auth.token.value, user);
+    } catch (_) {}
+  }
+
+  // ----------------------------------------------------------
+  // SAVE FCM TOKEN
+  // POST /notifikasi/fcm-token (Person 4)
+  // ----------------------------------------------------------
+  Future<void> _saveFcmToken() async {
+    // Inisialisasi FCM dan ambil token dulu
+    final fcmToken = await _firebase.initAndGetToken();
+    if (fcmToken == null) return;
+    try {
+      await _api.dio.post('/notifikasi/fcm-token', data: {
+        'fcm_token': fcmToken,
+      });
+    } catch (_) {
+      // Silent fail — tidak blokir login flow
+    }
   }
 }

@@ -29,19 +29,38 @@ class LaporanModel {
     this.updatedAt,
   });
 
-  factory LaporanModel.fromJson(Map<String, dynamic> json) => LaporanModel(
-    id: json['id'],
-    userId: json['user_id'],
-    kategoriId: json['kategori_id'],
-    judul: json['judul'] ?? '',
-    deskripsi: json['deskripsi'],
-    latitude: double.tryParse(json['latitude'].toString()) ?? 0,
-    longitude: double.tryParse(json['longitude'].toString()) ?? 0,
-    alamat: json['alamat'],
-    priority: json['priority'] ?? 'sedang',
-    status: json['status'] ?? 'pending',
-    foto: json['foto'],
-    createdAt: json['created_at'] ?? '',
-    updatedAt: json['updated_at'],
-  );
+  factory LaporanModel.fromJson(Map<String, dynamic> json) {
+    return LaporanModel(
+      id: json['id'] ?? 0,
+      userId: json['user_id'] ?? 0,
+      kategoriId: json['kategori_id'],
+      judul: json['judul'] ?? '',
+      deskripsi: json['deskripsi'],
+      // Handle string atau double dari API
+      latitude: double.tryParse(json['latitude'].toString()) ?? 0.0,
+      longitude: double.tryParse(json['longitude'].toString()) ?? 0.0,
+      alamat: json['alamat'],
+      priority: json['priority'] ?? 'sedang',
+      status: json['status'] ?? 'pending',
+      foto: json['foto'],
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'user_id': userId,
+    'kategori_id': kategoriId,
+    'judul': judul,
+    'deskripsi': deskripsi,
+    'latitude': latitude,
+    'longitude': longitude,
+    'alamat': alamat,
+    'priority': priority,
+    'status': status,
+    'foto': foto,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+  };
 }
