@@ -3,13 +3,13 @@ import { getFirestore } from 'firebase/firestore';
 import { getMessaging } from 'firebase/messaging';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: "AIzaSyC3nY6ySOOzfGeA3IlsJFgGGzE9HY3lwIY",
+  authDomain: "kelas-if-b-kelompok-16.firebaseapp.com",
+  projectId: "kelas-if-b-kelompok-16",
+  storageBucket: "kelas-if-b-kelompok-16.firebasestorage.app",
+  messagingSenderId: "311142907128",
+  appId: "1:311142907128:web:4668165205f0a1cb78cf0d",
+  measurementId: "G-MP2SHXQ4ZB"
 };
 
 const app = initializeApp(firebaseConfig);
