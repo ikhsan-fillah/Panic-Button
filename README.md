@@ -92,3 +92,16 @@
 |---|---|
 | GET | /api/notifikasi |
 | PUT | /api/notifikasi/:id/read |
+
+---
+
+## Realtime & Firebase
+
+| Method | Endpoint |
+|---|---|
+| POST | /api/notifikasi/fcm-token |
+| POST | /api/lokasi/update |
+| GET | /api/lokasi/aktif |
+| POST | /api/broadcast |
+| GET | /api/broadcast |
+| GET | /api/alarm/latest |

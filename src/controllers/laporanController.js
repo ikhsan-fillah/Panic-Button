@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { createSosRealtime, syncLaporanRealtime } = require('../services/realtimeService');
 
 exports.store = async (req, res) => {
   try {
@@ -13,6 +14,10 @@ exports.store = async (req, res) => {
       'INSERT INTO riwayat_respon (laporan_id, changed_by, status, catatan) VALUES (?, ?, ?, ?)',
       [result.insertId, req.user.id, 'pending', 'Laporan dibuat']
     );
+
+    await createSosRealtime(result.insertId).catch((firebaseError) => {
+      console.error('Firebase SOS sync gagal:', firebaseError.message);
+    });
 
     res.status(201).json({ message: 'Laporan berhasil dibuat', laporan_id: result.insertId });
   } catch (error) {
@@ -105,6 +110,10 @@ exports.update = async (req, res) => {
       ]
     );
 
+    await syncLaporanRealtime(req.params.id, `Status laporan diubah menjadi ${status}`).catch((firebaseError) => {
+      console.error('Firebase status sync gagal:', firebaseError.message);
+    });
+
     res.json({
       message: 'Laporan berhasil diupdate',
     });
@@ -122,6 +131,11 @@ exports.cancel = async (req, res) => {
       'INSERT INTO riwayat_respon (laporan_id, changed_by, status, catatan) VALUES (?, ?, ?, ?)',
       [req.params.id, req.user.id, 'cancel', 'Laporan dibatalkan oleh warga']
     );
+
+    await syncLaporanRealtime(req.params.id, 'Laporan dibatalkan oleh warga').catch((firebaseError) => {
+      console.error('Firebase cancel sync gagal:', firebaseError.message);
+    });
+
     res.json({ message: 'Laporan dibatalkan' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -136,6 +150,10 @@ exports.uploadFoto = async (req, res) => {
 
     const fotoUrl = req.file.gcsUrl;
     await pool.query('UPDATE laporan SET foto = ? WHERE id = ?', [fotoUrl, req.params.id]);
+
+    await syncLaporanRealtime(req.params.id, 'Foto kejadian diperbarui').catch((firebaseError) => {
+      console.error('Firebase foto sync gagal:', firebaseError.message);
+    });
 
     res.json({ message: 'Foto berhasil diupload', foto: fotoUrl });
   } catch (error) {

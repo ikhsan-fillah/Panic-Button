@@ -14,6 +14,7 @@ const userController = require('../controllers/userController');
 const dashboardController = require('../controllers/dashboardController');
 const mapsController = require('../controllers/mapsController');
 const notifikasiController = require('../controllers/notifikasiController');
+const realtimeController = require('../controllers/realtimeController');
 
 
 // AUTH
@@ -73,5 +74,17 @@ router.get('/maps/heatmap', authMiddleware, roleMiddleware('satpam'), mapsContro
 // NOTIFIKASI
 router.get('/notifikasi', authMiddleware, roleMiddleware('warga', 'satpam'), notifikasiController.index);
 router.put('/notifikasi/:id/read', authMiddleware, roleMiddleware('warga', 'satpam'), notifikasiController.markRead);
+router.post('/notifikasi/fcm-token', authMiddleware, roleMiddleware('warga', 'satpam'), realtimeController.saveFcmToken);
+
+// REALTIME LOKASI
+router.post('/lokasi/update', authMiddleware, roleMiddleware('warga', 'satpam'), realtimeController.updateLocation);
+router.get('/lokasi/aktif', authMiddleware, roleMiddleware('satpam'), realtimeController.activeLocations);
+
+// BROADCAST DARURAT
+router.post('/broadcast', authMiddleware, roleMiddleware('satpam'), realtimeController.sendBroadcast);
+router.get('/broadcast', authMiddleware, roleMiddleware('satpam'), realtimeController.broadcastHistory);
+
+// ALARM DASHBOARD
+router.get('/alarm/latest', authMiddleware, roleMiddleware('satpam'), realtimeController.latestAlarm);
 
 module.exports = router;

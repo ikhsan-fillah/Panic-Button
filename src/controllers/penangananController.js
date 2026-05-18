@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { syncLaporanRealtime } = require('../services/realtimeService');
 
 exports.store = async (req, res) => {
   try {
@@ -41,6 +42,10 @@ exports.store = async (req, res) => {
         catatan || 'Update penanganan',
       ]
     );
+
+    await syncLaporanRealtime(laporan_id, catatan || `Status laporan diubah menjadi ${status}`).catch((firebaseError) => {
+      console.error('Firebase penanganan sync gagal:', firebaseError.message);
+    });
 
     res.status(201).json({
       message: 'Penanganan berhasil disimpan',
@@ -134,6 +139,10 @@ exports.updateByLaporan = async (req, res) => {
         updatedCatatan || 'Update penanganan',
       ]
     );
+
+    await syncLaporanRealtime(req.params.laporan_id, updatedCatatan || `Status laporan diubah menjadi ${updatedStatus}`).catch((firebaseError) => {
+      console.error('Firebase update penanganan sync gagal:', firebaseError.message);
+    });
 
     res.json({
       message: 'Penanganan berhasil diupdate',
