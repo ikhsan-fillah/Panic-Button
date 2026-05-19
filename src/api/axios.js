@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL;
+const baseURL = "https://panic-button-api-311142907128.us-central1.run.app/api";
 
 const api = axios.create({ baseURL });
 

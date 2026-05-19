@@ -23,10 +23,9 @@ const PAGE_TITLES = {
 };
 
 function PrivateLayout() {
+  const { pathname } = useLocation();
   const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/login" replace />;
-
-  const { pathname } = useLocation();
   const title = PAGE_TITLES[pathname] || 'Dashboard';
 
   return (

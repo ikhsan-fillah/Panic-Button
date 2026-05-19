@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import api from '../api/axios';
@@ -9,7 +8,6 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {

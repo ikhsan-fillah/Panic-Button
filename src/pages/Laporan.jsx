@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import StatusBadge from '../components/StatusBadge';
 import { toast } from 'react-toastify';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const STATUS_OPTIONS = ['pending','menuju_lokasi','diproses','selesai','cancel'];
 export default function Laporan() {
@@ -11,15 +12,54 @@ export default function Laporan() {
   const [catatan, setCatatan]   = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const fetchLaporan = (status = '') => {
-    setLoading(true);
-    const url = status ? `/laporan?status=${status}` : '/laporan';
-    api.get(url).then(res => setLaporan(res.data.data || res.data || []))
-      .finally(() => setLoading(false));
+  const fetchLaporan = async (status = '') => {
+    try {
+      setLoading(true);
+      const url = status
+        ? `/laporan?status=${status}`
+        : '/laporan';
+      const res = await api.get(url);
+      setLaporan(
+        res.data.data || res.data || []
+      );
+    } catch (err) {
+      console.log(err);
+      toast.error('Gagal mengambil laporan.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchLaporan(filter); }, [filter]);
+  useEffect(() => {
+    const loadData = async () => {
+      await fetchLaporan(filter);
+    };
+    loadData();
+  }, [filter]);
+
+  useEffect(() => {
+    if (
+      location.state?.selectedId &&
+      laporan.length > 0 &&
+      !selected
+    ) {
+      const found = laporan.find(
+        (l) => l.id === location.state.selectedId
+      );
+      if (found) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelected(found);
+        setNewStatus(found.status);
+        setCatatan('');
+        navigate('/laporan', {
+          replace: true,
+        });
+      }
+    }
+  }, [location.state, laporan, selected, navigate]);
 
   const handleUpdate = async () => {
     if (!newStatus) return;
@@ -32,7 +72,7 @@ export default function Laporan() {
       toast.success('Status berhasil diupdate!');
       setSelected(null);
       fetchLaporan(filter);
-    } catch (e) {
+    } catch {
       toast.error('Gagal update status.');
     }
   };
@@ -70,9 +110,9 @@ export default function Laporan() {
               {laporan.map(l => (
                 <tr key={l.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '12px 16px' }}>#{l.id}</td>
-                  <td style={{ padding: '12px 16px' }}>{l.user?.name || l.user_id}</td>
+                  <td style={{ padding: '12px 16px' }}>{l.user_name || l.user_id}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 500 }}>{l.judul}</td>
-                  <td style={{ padding: '12px 16px' }}>{l.kategori?.nama || '-'}</td>
+                  <td style={{ padding: '12px 16px' }}>{l.kategori_nama || '-'}</td>
                   <td style={{ padding: '12px 16px' }}>
                     <span style={{
                       color: l.priority === 'tinggi' ? '#ef4444' : l.priority === 'sedang' ? '#f59e0b' : '#64748b',
