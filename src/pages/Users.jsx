@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
-import { Trash2, Pencil } from 'lucide-react';
+import { Trash2} from 'lucide-react';
 
 export default function Users() {
   const [users, setUsers] = useState([]);

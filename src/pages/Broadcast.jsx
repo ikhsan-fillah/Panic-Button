@@ -4,28 +4,37 @@ import { toast } from 'react-toastify';
 import { Radio } from 'lucide-react';
 
 export default function Broadcast() {
+  const [title, setTitle] = useState('');
   const [pesan,   setPesan]   = useState('');
   const [riwayat, setRiwayat] = useState([]);
   const [loading,  setLoading]  = useState(false);
   const [fetching, setFetching] = useState(true); 
-  const loadBroadcast = () => {
-    setFetching(true);
-    api.get('/broadcast')
-      .then(r => setRiwayat(r.data.data || r.data || []))
-      .catch(() => {})
-      .finally(() => setFetching(false));
+  const loadBroadcast = async () => {
+    try {
+      setFetching(true);
+      const r = await api.get('/broadcast');
+      setRiwayat(r.data.data || r.data || []);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setFetching(false);
+    }
   };
 
   useEffect(() => {
-    loadBroadcast();
+    const init = async () => {
+      await loadBroadcast();
+    };
+    init();
   }, []);
 
   const handleSend = async () => {
     if (!pesan.trim()) return;
     setLoading(true);
     try {
-      await api.post('/broadcast', { pesan });
+      await api.post('/broadcast', {title, message: pesan});
       toast.success('Broadcast berhasil dikirim ke semua warga!');
+      setTitle('');
       setPesan('');
       loadBroadcast();
     } catch {
@@ -36,31 +45,77 @@ export default function Broadcast() {
   };
 
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Broadcast Darurat</h2>
-      <p style={{ color: '#64748b', fontSize: 14, marginBottom: 24 }}>
+    <div style={{ padding: '32px 36px' }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6, marginTop: 0 }}>
+        Broadcast Darurat
+      </h2>
+      <p style={{ color: '#64748b', fontSize: 14, marginBottom: 28, marginTop: 0 }}>
         Kirim pesan darurat ke seluruh warga secara realtime.
       </p>
 
-      <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', marginBottom: 24 }}>
-        <h3 style={{ marginTop: 0, fontSize: 16 }}>📢 Kirim Pesan Broadcast</h3>
+      <div style={{
+        background: '#fff',
+        borderRadius: 12,
+        padding: '24px 28px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        marginBottom: 24,
+      }}>
+        <h3 style={{ marginTop: 0, marginBottom: 18, fontSize: 15, fontWeight: 700 }}>
+          📢 Kirim Pesan Broadcast
+        </h3>
+
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>
+          Judul
+        </label>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Judul broadcast..."
+          style={{
+            width: '100%',
+            padding: '10px 14px',
+            border: '1.5px solid #e2e8f0',
+            borderRadius: 8,
+            fontSize: 14,
+            marginBottom: 16,
+            boxSizing: 'border-box',
+          }}
+        />
+
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>
+          Pesan
+        </label>
         <textarea
           value={pesan}
           onChange={e => setPesan(e.target.value)}
           placeholder="Tulis pesan darurat untuk seluruh warga..."
           style={{
-            width: '100%', height: 100, padding: '10px 14px',
-            border: '1.5px solid #e2e8f0', borderRadius: 8,
-            fontSize: 14, resize: 'vertical', boxSizing: 'border-box', marginBottom: 12,
+            width: '100%',
+            height: 100,
+            padding: '10px 14px',
+            border: '1.5px solid #e2e8f0',
+            borderRadius: 8,
+            fontSize: 14,
+            resize: 'vertical',
+            boxSizing: 'border-box',
+            marginBottom: 20,
           }}
         />
         <button
           onClick={handleSend}
           disabled={loading}
           style={{
-            padding: '10px 24px', background: '#262692', color: '#fff',
-            border: 'none', borderRadius: 8, cursor: 'pointer',
-            fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 24px',
+            background: '#262692',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontWeight: 700,
+            fontSize: 14,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
             opacity: loading ? 0.7 : 1,
           }}
         >

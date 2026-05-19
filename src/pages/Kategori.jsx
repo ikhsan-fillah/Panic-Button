@@ -7,28 +7,58 @@ export default function Kategori() {
   const [list, setList] = useState([]);
   const [nama, setNama] = useState('');
   const [editing, setEditing] = useState(null);
+  const fetchKategori = async () => {
+    try {
+      const r = await api.get('/kategori');
+      setList(r.data.data || r.data || []);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
-  const fetch = () => api.get('/kategori').then(r => setList(r.data.data || r.data || []));
-  useEffect(fetch, []);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const r = await api.get('/kategori');
+        setList(r.data.data || r.data || []);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    loadData();
+  }, []);
 
   const handleSave = async () => {
     if (!nama.trim()) return;
     try {
       if (editing) {
-        await api.put(`/kategori/${editing.id}`, { nama });
+        await api.put(`/kategori/${editing.id}`, {
+          nama
+        });
         toast.success('Kategori diupdate!');
       } else {
-        await api.post('/kategori', { nama });
+        await api.post('/kategori', {
+          nama
+        });
         toast.success('Kategori ditambahkan!');
       }
-      setNama(''); setEditing(null); fetch();
-    } catch { toast.error('Gagal menyimpan.'); }
+      setNama('');
+      setEditing(null);
+      fetchKategori();
+    } catch {
+      toast.error('Gagal menyimpan.');
+    }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Hapus kategori ini?')) return;
-    await api.delete(`/kategori/${id}`);
-    toast.success('Kategori dihapus.'); fetch();
+    try {
+      await api.delete(`/kategori/${id}`);
+      toast.success('Kategori dihapus.');
+      fetchKategori();
+    } catch {
+      toast.error('Gagal menghapus.');
+    }
   };
 
   return (

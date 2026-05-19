@@ -36,11 +36,22 @@ export default function Maps() {
   return (
     <div style={{ padding: 32 }}>
       <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>Maps Realtime Kejadian</h2>
-      <div style={{ borderRadius: 12, overflow: 'hidden', height: 520, boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }}>
+      <div style={{
+        borderRadius: 12,
+        overflow: 'hidden',
+        height: 520,
+        position: 'relative',
+        zIndex: 1,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+      }}>
         <MapContainer
           center={[-7.7956, 110.3695]}
           zoom={13}
-          style={{ height: '100%', width: '100%' }}
+          style={{
+            height: '100%',
+            width: '100%',
+            zIndex: 1,
+          }}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
