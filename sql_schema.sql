@@ -71,9 +71,11 @@ CREATE TABLE lokasi (
 CREATE TABLE notifikasi (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
+    laporan_id INT NOT NULL,
     title VARCHAR(150) NOT NULL,
     message TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_notifikasi_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT fk_notifikasi_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notifikasi_laporan FOREIGN KEY (laporan_id) REFERENCES laporan(id) ON DELETE CASCADE
 );

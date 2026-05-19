@@ -2,26 +2,66 @@ const pool = require('../config/db');
 const { createSosRealtime, syncLaporanRealtime } = require('../services/realtimeService');
 
 exports.store = async (req, res) => {
+  const connection = await pool.getConnection();
+
   try {
+    await connection.beginTransaction();
+
     const { kategori_id, judul, deskripsi, latitude, longitude, alamat, priority } = req.body;
-    const [result] = await pool.query(
+
+    const [result] = await connection.query(
       `INSERT INTO laporan (user_id, kategori_id, judul, deskripsi, latitude, longitude, alamat, priority, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [req.user.id, kategori_id, judul, deskripsi, latitude, longitude, alamat, priority || 'sedang']
     );
 
-    await pool.query(
-      'INSERT INTO riwayat_respon (laporan_id, changed_by, status, catatan) VALUES (?, ?, ?, ?)',
+    await connection.query(
+      `INSERT INTO riwayat_respon (laporan_id, changed_by, status, catatan)
+       VALUES (?, ?, ?, ?)`,
       [result.insertId, req.user.id, 'pending', 'Laporan dibuat']
     );
+
+    const [satpamRows] = await connection.query(
+      `SELECT id FROM users WHERE role = 'satpam'`
+    );
+
+    if (satpamRows.length > 0) {
+      const notifValues = satpamRows.map((satpam) => [
+        satpam.id,
+        result.insertId,
+        `SOS: ${judul}`,
+        deskripsi || 'Ada laporan baru',
+        false
+      ]);
+
+      await connection.query(
+        `INSERT INTO notifikasi (user_id, laporan_id, title, message, is_read)
+         VALUES ?`,
+        [notifValues]
+      );
+    }
+
+    await connection.commit();
 
     await createSosRealtime(result.insertId).catch((firebaseError) => {
       console.error('Firebase SOS sync gagal:', firebaseError.message);
     });
 
-    res.status(201).json({ message: 'Laporan berhasil dibuat', laporan_id: result.insertId });
+    res.status(201).json({
+      message: 'Laporan berhasil dibuat',
+      laporan_id: result.insertId,
+      total_satpam_notified: satpamRows.length
+    });
   } catch (error) {
+    try {
+      await connection.rollback();
+    } catch (rollbackError) {
+      console.error('Rollback gagal:', rollbackError.message);
+    }
+
     res.status(500).json({ message: error.message });
+  } finally {
+    connection.release();
   }
 };
 
@@ -55,7 +95,11 @@ exports.show = async (req, res) => {
        WHERE l.id = ?`,
       [req.params.id]
     );
-    if (rows.length === 0) return res.status(404).json({ message: 'Laporan tidak ditemukan' });
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Laporan tidak ditemukan' });
+    }
+
     res.json(rows[0]);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -64,7 +108,10 @@ exports.show = async (req, res) => {
 
 exports.userLaporan = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM laporan WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+    const [rows] = await pool.query(
+      'SELECT * FROM laporan WHERE user_id = ? ORDER BY created_at DESC',
+      [req.user.id]
+    );
     res.json(rows);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -79,13 +126,10 @@ exports.update = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({
-        message: 'Laporan tidak ditemukan',
-      });
+      return res.status(404).json({ message: 'Laporan tidak ditemukan' });
     }
 
     const laporan = rows[0];
-
     const judul = req.body.judul || laporan.judul;
     const deskripsi = req.body.deskripsi || laporan.deskripsi;
     const priority = req.body.priority || laporan.priority;
@@ -99,36 +143,31 @@ exports.update = async (req, res) => {
     );
 
     await pool.query(
-      `INSERT INTO riwayat_respon 
-       (laporan_id, changed_by, status, catatan)
+      `INSERT INTO riwayat_respon (laporan_id, changed_by, status, catatan)
        VALUES (?, ?, ?, ?)`,
-      [
-        req.params.id,
-        req.user.id,
-        status,
-        `Status laporan diubah menjadi ${status}`,
-      ]
+      [req.params.id, req.user.id, status, `Status laporan diubah menjadi ${status}`]
     );
 
     await syncLaporanRealtime(req.params.id, `Status laporan diubah menjadi ${status}`).catch((firebaseError) => {
       console.error('Firebase status sync gagal:', firebaseError.message);
     });
 
-    res.json({
-      message: 'Laporan berhasil diupdate',
-    });
+    res.json({ message: 'Laporan berhasil diupdate' });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 exports.cancel = async (req, res) => {
   try {
-    await pool.query('UPDATE laporan SET status = ? WHERE id = ?', ['cancel', req.params.id]);
     await pool.query(
-      'INSERT INTO riwayat_respon (laporan_id, changed_by, status, catatan) VALUES (?, ?, ?, ?)',
+      'UPDATE laporan SET status = ? WHERE id = ?',
+      ['cancel', req.params.id]
+    );
+
+    await pool.query(
+      `INSERT INTO riwayat_respon (laporan_id, changed_by, status, catatan)
+       VALUES (?, ?, ?, ?)`,
       [req.params.id, req.user.id, 'cancel', 'Laporan dibatalkan oleh warga']
     );
 
@@ -149,7 +188,11 @@ exports.uploadFoto = async (req, res) => {
     }
 
     const fotoUrl = req.file.gcsUrl;
-    await pool.query('UPDATE laporan SET foto = ? WHERE id = ?', [fotoUrl, req.params.id]);
+
+    await pool.query(
+      'UPDATE laporan SET foto = ? WHERE id = ?',
+      [fotoUrl, req.params.id]
+    );
 
     await syncLaporanRealtime(req.params.id, 'Foto kejadian diperbarui').catch((firebaseError) => {
       console.error('Firebase foto sync gagal:', firebaseError.message);
