@@ -111,17 +111,20 @@ async function sendFcmToTokens(tokens, payload) {
 
 exports.saveFcmToken = async (req, res) => {
   try {
-    const { token, platform, device_id, device_name } = req.body;
+    // Mobile Person 1 mengirim field `fcm_token`.
+    // Backend juga tetap menerima `token` agar kompatibel dengan dokumentasi internal Person 4.
+    const { token, fcm_token, platform, device_id, device_name } = req.body;
+    const finalToken = token || fcm_token;
 
-    if (!token || typeof token !== 'string') {
+    if (!finalToken || typeof finalToken !== 'string') {
       return res.status(400).json({ message: 'FCM token wajib dikirim' });
     }
 
-    const ref = firestore.collection('fcm_tokens').doc(tokenDocId(token));
+    const ref = firestore.collection('fcm_tokens').doc(tokenDocId(finalToken));
     const snapshot = await ref.get();
 
     await ref.set({
-      token,
+      token: finalToken,
       user_id: req.user.id,
       user_name: req.user.name,
       role: req.user.role,
