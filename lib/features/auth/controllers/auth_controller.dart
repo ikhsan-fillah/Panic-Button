@@ -94,6 +94,7 @@ class AuthController extends GetxController {
       // Tetap logout meski request gagal
     }
     await _auth.clearSession();
+    _api.clearToken();
     Get.offAllNamed(AppRoutes.login);
   }
 

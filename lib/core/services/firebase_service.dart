@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../routes/app_routes.dart';
 import '../theme/app_theme.dart';
 
 // ============================================================
 // CATATAN UNTUK PERSON 4:
-// Sesuaikan nama path Firebase berikut dengan struktur
-// Firestore/Realtime Database yang sudah kamu buat:
-//
+// Sesuaikan nama collection Firestore berikut:
 // - realtime_status/{laporanId}  → status laporan terkini
 // - sos_notifications/{userId}   → notifikasi SOS masuk
 // - active_locations/{userId}    → lokasi aktif user
+// - active_reports/{laporanId}   → laporan aktif
+// - emergency_broadcast/{id}     → broadcast darurat
 //
 // Juga pastikan google-services.json sudah di-share ke Person 1
 // dan diletakkan di folder: android/app/google-services.json
@@ -19,7 +20,7 @@ import '../theme/app_theme.dart';
 
 class FirebaseService extends GetxService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  final FirebaseDatabase _database = FirebaseDatabase.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String? fcmToken;
   final RxBool isConnected = true.obs;
@@ -28,7 +29,6 @@ class FirebaseService extends GetxService {
   void onInit() {
     super.onInit();
     _initFCM();
-    _listenConnectivity();
   }
 
   // ----------------------------------------------------------
@@ -80,13 +80,14 @@ class FirebaseService extends GetxService {
     Get.snackbar(
       title,
       body,
-      backgroundColor: type == 'sos'
-          ? AppTheme.danger.withOpacity(0.95)
-          : AppTheme.bgCard,
+      backgroundColor:
+          type == 'sos' ? AppTheme.danger.withOpacity(0.95) : AppTheme.bgCard,
       colorText: Colors.white,
       duration: const Duration(seconds: 5),
       icon: Icon(
-        type == 'sos' ? Icons.warning_amber_rounded : Icons.notifications_rounded,
+        type == 'sos'
+            ? Icons.warning_amber_rounded
+            : Icons.notifications_rounded,
         color: Colors.white,
       ),
       snackPosition: SnackPosition.TOP,
@@ -96,29 +97,42 @@ class FirebaseService extends GetxService {
   }
 
   void _handleNotificationTap(RemoteMessage message) {
-    // TODO (Person 1): Navigate ke halaman yang sesuai berdasarkan data notifikasi
-    // Contoh:
-    // final laporanId = message.data['laporan_id'];
-    // if (laporanId != null) {
-    //   Get.toNamed(AppRoutes.detailLaporan, arguments: int.parse(laporanId));
-    // }
+    final laporanId = _parseLaporanId(message.data['laporan_id']);
+    if (laporanId != null) {
+      Get.toNamed(AppRoutes.detailLaporan, arguments: laporanId);
+      return;
+    }
+    Get.toNamed(AppRoutes.notifikasi);
+  }
+
+  int? _parseLaporanId(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw);
+    return null;
   }
 
   // ----------------------------------------------------------
   // REALTIME STATUS LISTENER
   // Dipanggil dari LaporanController saat buka detail laporan
   // ----------------------------------------------------------
-  Stream<DatabaseEvent> listenLaporanStatus(int laporanId) {
-    // TODO (Person 4): Pastikan path ini sesuai struktur Firebase kamu
-    return _database.ref('realtime_status/$laporanId').onValue;
+  Stream<DocumentSnapshot<Map<String, dynamic>>> listenLaporanStatus(
+      int laporanId) {
+    return _firestore
+        .collection('realtime_status')
+        .doc(laporanId.toString())
+        .snapshots();
   }
 
   // ----------------------------------------------------------
   // NOTIFIKASI SOS LISTENER
   // ----------------------------------------------------------
-  Stream<DatabaseEvent> listenNotifikasiSOS(int userId) {
-    // TODO (Person 4): Pastikan path ini sesuai struktur Firebase kamu
-    return _database.ref('sos_notifications/$userId').onValue;
+  Stream<DocumentSnapshot<Map<String, dynamic>>> listenNotifikasiSOS(
+      int userId) {
+    return _firestore
+        .collection('sos_notifications')
+        .doc(userId.toString())
+        .snapshots();
   }
 
   // ----------------------------------------------------------
@@ -132,11 +146,14 @@ class FirebaseService extends GetxService {
   }) async {
     try {
       // TODO (Person 4): Pastikan path ini sesuai struktur Firebase kamu
-      await _database.ref('active_locations/$userId').set({
+      await _firestore
+          .collection('active_locations')
+          .doc(userId.toString())
+          .set({
         'latitude': lat,
         'longitude': lng,
         'updated_at': DateTime.now().millisecondsSinceEpoch,
-      });
+      }, SetOptions(merge: true));
     } catch (_) {
       // Silent fail — lokasi tidak krusial untuk flow utama
     }
@@ -148,17 +165,11 @@ class FirebaseService extends GetxService {
   // ----------------------------------------------------------
   Future<void> removeActiveLocation(int userId) async {
     try {
-      await _database.ref('active_locations/$userId').remove();
+      await _firestore
+          .collection('active_locations')
+          .doc(userId.toString())
+          .delete();
     } catch (_) {}
-  }
-
-  // ----------------------------------------------------------
-  // CONNECTIVITY LISTENER
-  // ----------------------------------------------------------
-  void _listenConnectivity() {
-    _database.ref('.info/connected').onValue.listen((event) {
-      isConnected.value = event.snapshot.value == true;
-    });
   }
 
   // ----------------------------------------------------------

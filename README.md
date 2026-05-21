@@ -1,10 +1,10 @@
-# 🚨 Panic Button — Mobile App (Flutter)
+# Panic Button - Mobile App (Flutter)
 
 Aplikasi pelaporan darurat berbasis mobile untuk warga perumahan. Warga dapat menekan tombol SOS untuk mengirim laporan darurat ke satpam secara realtime.
 
 ---
 
-## 📋 Tech Stack
+## Tech Stack
 
 | Layer | Teknologi |
 |---|---|
@@ -18,27 +18,27 @@ Aplikasi pelaporan darurat berbasis mobile untuk warga perumahan. Warga dapat me
 
 ---
 
-## 🏗️ Struktur Folder
+## Struktur Folder
 
-```
+```text
 lib/
-├── core/
-│   ├── constants/     # app_constants.dart (base URL, keys)
-│   ├── routes/        # app_routes.dart (semua route)
-│   ├── services/      # api_service, auth_service, firebase_service
-│   └── theme/         # app_theme.dart (warna, helper status)
-├── features/
-│   ├── auth/          # Login & Register
-│   ├── home/          # Home screen + Panic Button
-│   ├── laporan/       # Form laporan, riwayat, detail
-│   ├── notifikasi/    # Daftar notifikasi
-│   └── splash/        # Splash screen
-main.dart
+|-- core/
+|   |-- constants/     # app_constants.dart (base URL, keys)
+|   |-- routes/        # app_routes.dart (semua route)
+|   |-- services/      # api_service, auth_service, firebase_service
+|   `-- theme/         # app_theme.dart
+|-- features/
+|   |-- auth/          # Login & Register
+|   |-- home/          # Home screen + Panic Button
+|   |-- laporan/       # Form laporan, riwayat, detail
+|   |-- notifikasi/    # Daftar notifikasi
+|   `-- splash/        # Splash screen
+`-- main.dart
 ```
 
 ---
 
-## ⚙️ Setup Project
+## Setup Project (Android)
 
 ### 1. Clone & Install Dependencies
 
@@ -49,117 +49,107 @@ git checkout mobile
 flutter pub get
 ```
 
-### 2. Ganti Base URL
+### 2. Ganti Base URL Backend
 
-Buka file `lib/core/constants/app_constants.dart`:
+Edit file `lib/core/constants/app_constants.dart`:
 
 ```dart
 // Android Emulator (default)
 static const String baseUrl = 'http://10.0.2.2:3000/api';
 
-// Device fisik — ganti dengan IP komputer kamu
+// Device fisik - ganti dengan IP komputer kamu
 // static const String baseUrl = 'http://192.168.1.x:3000/api';
-
-// Production
-// static const String baseUrl = 'https://your-domain.com/api';
 ```
 
-> **Catatan:** Backend menggunakan Node.js/Express di port `3000`.
+### 3. Setup Firebase Android
 
-### 3. Setup Firebase (Minta ke Person 4)
+1. Pastikan `android/app/google-services.json` tersedia.
+2. Project Firebase yang dipakai: `kelas-if-b-kelompok-16`.
+3. Gradle Firebase plugin sudah aktif di:
+   - `android/settings.gradle.kts`
+   - `android/app/build.gradle.kts`
 
-1. Minta file `google-services.json` ke **Person 4**
-2. Letakkan di `android/app/google-services.json`
-3. Pastikan `firebase_options.dart` sudah ada di `lib/`
-
-> Tanpa `google-services.json`, app tetap bisa jalan tapi **notifikasi & realtime tidak aktif**.
+Catatan:
+- Untuk Android-only, app bisa jalan tanpa `firebase_options.dart`.
+- `firebase_options.dart` baru wajib saat target Web/iOS/multi-platform.
 
 ### 4. Jalankan App
 
 ```bash
-# Pastikan emulator/device sudah aktif
 flutter run
-
-# Build APK debug
-flutter build apk --debug
-
-# Build APK release
-flutter build apk --release
 ```
 
 ---
 
-## 📱 Fitur Mobile (Person 1)
+## Endpoint Backend (Mobile)
 
-| Fitur | Status | Endpoint |
+| Fitur | Method | Endpoint |
 |---|---|---|
-| Login | ✅ | `POST /auth/login` |
-| Register | ✅ | `POST /auth/register` |
-| Logout | ✅ | `POST /auth/logout` |
-| Tombol SOS / Panic Button | ✅ | `POST /laporan` |
-| GPS otomatis | ✅ | — |
-| Upload foto kejadian | ✅ | `POST /laporan/:id/foto` |
-| Riwayat laporan | ✅ | `GET /laporan/user` |
-| Detail laporan | ✅ | `GET /laporan/:id` |
-| Batalkan laporan | ✅ | `PUT /laporan/:id/cancel` |
-| Status realtime | ✅ | Firebase `realtime_status` |
-| Notifikasi FCM | ✅* | `POST /notifikasi/fcm-token` |
-| Daftar notifikasi | ✅ | `GET /notifikasi` |
-
-> *) Membutuhkan `google-services.json` dari Person 4
+| Login | POST | `/api/auth/login` |
+| Register | POST | `/api/auth/register` |
+| Logout | POST | `/api/auth/logout` |
+| Profil login | GET | `/api/auth/me` |
+| Kirim SOS/Laporan | POST | `/api/laporan` |
+| Upload foto laporan | POST | `/api/laporan/:id/foto` |
+| Riwayat laporan user | GET | `/api/laporan/user` |
+| Detail laporan | GET | `/api/laporan/:id` |
+| Batalkan laporan | PUT | `/api/laporan/:id/cancel` |
+| Daftar notifikasi | GET | `/api/notifikasi` |
+| Notifikasi dibaca | PUT | `/api/notifikasi/:id/read` |
+| Simpan FCM token | POST | `/api/notifikasi/fcm-token` |
 
 ---
 
-## 🔄 Flow Status Laporan
+## Status Fitur Mobile (Person 1)
 
+| Fitur | Status |
+|---|---|
+| Login/Register/Logout | Selesai |
+| Tombol SOS + GPS + upload foto | Selesai |
+| Riwayat & detail laporan | Selesai |
+| Batalkan laporan | Selesai |
+| Realtime status (Firestore `realtime_status`) | Selesai |
+| FCM token ke backend | Selesai |
+| Daftar notifikasi + mark as read | Selesai |
+| Tap notifikasi -> navigasi halaman terkait | Selesai |
+
+---
+
+## Struktur Firestore (koleksi)
+
+```text
+active_reports
+realtime_status
+sos_notifications
+emergency_broadcast
+active_locations
 ```
-pending → menuju_lokasi → diproses → selesai
-                                  ↘ cancel (bisa dari warga saat pending)
-```
 
 ---
 
-## 🤝 Pembagian Tugas Tim
+## Checklist Sebelum Demo
 
-| Person | Role | Branch |
-|---|---|---|
-| Person 1 (kamu) | Mobile Developer (Flutter) | `mobile` |
-| Person 2 | Web Dashboard Satpam | — |
-| Person 3 | Backend & MySQL | `backend` |
-| Person 4 | Realtime & Firebase | — |
-
----
-
-## ⚠️ Checklist Sebelum Demo
-
-- [ ] `google-services.json` sudah ada di `android/app/`
-- [ ] Base URL sudah diganti sesuai environment
-- [ ] Backend (`npm start`) sudah running di port 3000
-- [ ] Database MySQL sudah running & sudah ada data
-- [ ] Minimal 1 akun warga sudah terdaftar untuk demo
-- [ ] `flutter pub get` sudah dijalankan
-- [ ] Test flow: login → tekan SOS → lihat status update
+- [ ] `google-services.json` ada di `android/app/`
+- [ ] Base URL backend sesuai environment
+- [ ] Backend jalan di port `3000`
+- [ ] Database MySQL backend aktif
+- [ ] Akun warga tersedia untuk uji login
+- [ ] Uji flow: login -> SOS -> update status -> notifikasi
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting Singkat
 
-**App tidak bisa connect ke backend:**
-- Pastikan backend running di port 3000
+**App tidak connect backend**
+- Pastikan backend aktif di port `3000`
 - Cek base URL di `app_constants.dart`
 - Untuk device fisik, gunakan IP komputer (bukan `10.0.2.2`)
-- Pastikan HP dan komputer satu jaringan WiFi
 
-**Notifikasi tidak muncul:**
-- Pastikan `google-services.json` sudah ada
-- Minta Person 4 untuk share konfigurasi Firebase
-- Cek permission notifikasi di settings HP
+**Notifikasi tidak muncul**
+- Pastikan `google-services.json` benar
+- Pastikan permission notifikasi di HP diizinkan
+- Pastikan endpoint `POST /api/notifikasi/fcm-token` sukses saat login
 
-**GPS tidak akurat / tidak muncul:**
-- Pastikan permission lokasi sudah di-grant
-- Nyalakan GPS di HP
-- Test di luar ruangan untuk sinyal GPS lebih baik
-
-**Error `401 Unauthorized`:**
-- Token expired — coba logout lalu login ulang
-- Pastikan backend berjalan normal
+**401 Unauthorized**
+- Coba logout lalu login ulang
+- Cek token di backend masih valid

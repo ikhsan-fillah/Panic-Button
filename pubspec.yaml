@@ -1,10 +1,10 @@
 name: panic_button
 description: Aplikasi Panic Button - Sistem Pelaporan Darurat Warga
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -19,7 +19,7 @@ dependencies:
   # Firebase
   firebase_core: ^2.27.1
   firebase_messaging: ^14.7.20
-  firebase_database: ^10.4.9
+  cloud_firestore: ^4.17.5
 
   # Location
   geolocator: ^11.0.0
@@ -43,6 +43,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
-    - assets/icons/

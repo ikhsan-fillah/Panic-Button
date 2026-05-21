@@ -1,21 +1,31 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/firebase_service.dart';
 
 class NotifikasiController extends GetxController {
   final ApiService _api = Get.find();
   final FirebaseService _firebase = Get.find();
+  final AuthService _auth = Get.find();
 
   final RxList<Map<String, dynamic>> notifikasiList = <Map<String, dynamic>>[].obs;
   final RxBool isLoading = false.obs;
   final RxInt unreadCount = 0.obs;
+  StreamSubscription? _notifikasiSub;
 
   @override
   void onInit() {
     super.onInit();
     getNotifikasi();
     _listenFirebaseNotifikasi();
+  }
+
+  @override
+  void onClose() {
+    _notifikasiSub?.cancel();
+    super.onClose();
   }
 
   // ----------------------------------------------------------
@@ -65,14 +75,16 @@ class NotifikasiController extends GetxController {
 
   // ----------------------------------------------------------
   // FIREBASE REALTIME LISTENER
-  // TODO (Person 4): Ganti userId dengan id user yang login
-  // ----------------------------------------------------------
   void _listenFirebaseNotifikasi() {
-    // TODO: ganti 0 dengan userId dari AuthController
-    // _firebase.listenNotifikasiSOS(userId).listen((event) {
-    //   // Refresh list saat ada notifikasi baru dari Firebase
-    //   getNotifikasi();
-    // });
+    // Ambil user id dari AuthService (session global), lalu subscribe realtime.
+    final userId = _auth.userId;
+    if (userId == null) return;
+    _notifikasiSub?.cancel();
+    _notifikasiSub = _firebase.listenNotifikasiSOS(userId).listen((event) {
+      if (!event.exists) return;
+      // Saat ada trigger SOS di Firebase, refresh list dari API.
+      getNotifikasi();
+    });
   }
 
   // ----------------------------------------------------------

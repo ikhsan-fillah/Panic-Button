@@ -1,15 +1,18 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_database/firebase_database.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../models/laporan_model.dart';
 
 class LaporanController extends GetxController {
   final ApiService _api = Get.find();
   final FirebaseService _firebase = Get.find();
+  final AuthService _auth = Get.find();
 
   final RxList<LaporanModel> riwayatLaporan = <LaporanModel>[].obs;
   final Rx<LaporanModel?> currentLaporan = Rx<LaporanModel?>(null);
@@ -31,15 +34,24 @@ class LaporanController extends GetxController {
   // Realtime
   final RxString realtimeStatus = ''.obs;
   final RxBool isFirebaseConnected = true.obs;
+  StreamSubscription? _realtimeStatusSub;
+  Worker? _firebaseConnectivityWorker;
 
   @override
   void onInit() {
     super.onInit();
     getLocation();
     // Bind Firebase connectivity
-    ever(_firebase.isConnected, (connected) {
+    _firebaseConnectivityWorker = ever(_firebase.isConnected, (connected) {
       isFirebaseConnected.value = connected;
     });
+  }
+
+  @override
+  void onClose() {
+    _realtimeStatusSub?.cancel();
+    _firebaseConnectivityWorker?.dispose();
+    super.onClose();
   }
 
   // ----------------------------------------------------------
@@ -80,7 +92,8 @@ class LaporanController extends GetxController {
   // ----------------------------------------------------------
   Future<void> pickPhoto() async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
+    final file =
+        await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
     if (file != null) {
       selectedPhoto = file;
       photoPath.value = file.path;
@@ -89,7 +102,8 @@ class LaporanController extends GetxController {
 
   Future<void> pickPhotoFromGallery() async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final file =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (file != null) {
       selectedPhoto = file;
       photoPath.value = file.path;
@@ -121,13 +135,15 @@ class LaporanController extends GetxController {
       // Upload foto jika ada
       if (selectedPhoto != null) await uploadFoto(laporan.id);
 
-      // Update lokasi aktif ke Firebase
-      // TODO: ganti dengan userId dari AuthController
-      // await _firebase.updateActiveLocation(
-      //   userId: authController.user.id,
-      //   lat: currentLat.value,
-      //   lng: currentLng.value,
-      // );
+      // Sinkronkan lokasi aktif user ke Firebase saat SOS berhasil terkirim.
+      final userId = _auth.userId;
+      if (userId != null) {
+        await _firebase.updateActiveLocation(
+          userId: userId,
+          lat: currentLat.value,
+          lng: currentLng.value,
+        );
+      }
 
       Get.back();
       Get.snackbar(
@@ -138,8 +154,9 @@ class LaporanController extends GetxController {
         duration: const Duration(seconds: 4),
       );
       getRiwayat();
-    } on DioException catch (e) {
-      errorMessage.value = e.response?.data['message'] ?? 'Gagal mengirim laporan';
+    } on dio.DioException catch (e) {
+      errorMessage.value =
+          e.response?.data['message'] ?? 'Gagal mengirim laporan';
     } finally {
       isSendingSOS.value = false;
     }
@@ -151,8 +168,8 @@ class LaporanController extends GetxController {
   Future<void> uploadFoto(int laporanId) async {
     if (selectedPhoto == null) return;
     try {
-      final formData = FormData.fromMap({
-        'foto': await MultipartFile.fromFile(
+      final formData = dio.FormData.fromMap({
+        'foto': await dio.MultipartFile.fromFile(
           selectedPhoto!.path,
           filename: 'foto_laporan.jpg',
         ),
@@ -172,8 +189,9 @@ class LaporanController extends GetxController {
       final res = await _api.dio.get('/laporan/user');
       final list = (res.data['data'] ?? res.data) as List;
       riwayatLaporan.value = list.map((e) => LaporanModel.fromJson(e)).toList();
-    } on DioException catch (e) {
-      errorMessage.value = e.response?.data['message'] ?? 'Gagal memuat riwayat';
+    } on dio.DioException catch (e) {
+      errorMessage.value =
+          e.response?.data['message'] ?? 'Gagal memuat riwayat';
     } finally {
       isLoading.value = false;
     }
@@ -186,22 +204,22 @@ class LaporanController extends GetxController {
     isLoading.value = true;
     try {
       final res = await _api.dio.get('/laporan/$id');
-      currentLaporan.value = LaporanModel.fromJson(res.data['data'] ?? res.data);
+      currentLaporan.value =
+          LaporanModel.fromJson(res.data['data'] ?? res.data);
 
       // Mulai listen perubahan status dari Firebase
       _listenRealtimeStatus(id);
-    } on DioException catch (_) {
+    } on dio.DioException catch (_) {
     } finally {
       isLoading.value = false;
     }
   }
 
   void _listenRealtimeStatus(int laporanId) {
-    _firebase.listenLaporanStatus(laporanId).listen((DatabaseEvent event) {
-      // TODO (Person 4): Sesuaikan dengan struktur data Firebase kamu
-      // Contoh jika data = { 'status': 'menuju_lokasi' }
-      final data = event.snapshot.value;
-      if (data != null && data is Map) {
+    _realtimeStatusSub?.cancel();
+    _realtimeStatusSub = _firebase.listenLaporanStatus(laporanId).listen((event) {
+      final data = event.data();
+      if (data != null) {
         final newStatus = data['status'] as String?;
         if (newStatus != null && currentLaporan.value != null) {
           // Update status di UI tanpa fetch ulang ke API
@@ -209,6 +227,7 @@ class LaporanController extends GetxController {
           final current = currentLaporan.value!;
           currentLaporan.value = LaporanModel(
             id: current.id,
+            userId: current.userId,
             judul: current.judul,
             deskripsi: current.deskripsi,
             latitude: current.latitude,
@@ -231,8 +250,10 @@ class LaporanController extends GetxController {
   Future<void> batalkanLaporan(int id) async {
     try {
       await _api.dio.put('/laporan/$id/cancel');
-      // Hapus lokasi aktif dari Firebase saat laporan dibatalkan
-      // await _firebase.removeActiveLocation(userId);
+      final userId = _auth.userId;
+      if (userId != null) {
+        await _firebase.removeActiveLocation(userId);
+      }
       getRiwayat();
       Get.back();
       Get.snackbar('Info', 'Laporan berhasil dibatalkan');
