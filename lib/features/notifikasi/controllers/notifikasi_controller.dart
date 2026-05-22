@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firebase_service.dart';
@@ -19,10 +21,12 @@ class NotifikasiController extends GetxController {
   Worker? _authWorker;
   bool _broadcastPrimed = false;
   String? _lastBroadcastKey;
+  static const String _localNotifKey = 'local_notifikasi_cache';
 
   @override
   void onInit() {
     super.onInit();
+    _loadLocalNotifikasi();
     getNotifikasi();
     _listenFirebaseNotifikasi();
     _listenBroadcast();
@@ -66,6 +70,7 @@ class NotifikasiController extends GetxController {
           .toList();
       if (parsed.isNotEmpty) {
         notifikasiList.value = parsed;
+        await _saveLocalNotifikasi();
       }
       _countUnread();
     } on DioException catch (_) {
@@ -86,6 +91,7 @@ class NotifikasiController extends GetxController {
         notifikasiList[idx] = {...notifikasiList[idx], 'is_read': true};
         notifikasiList.refresh();
         _countUnread();
+        _saveLocalNotifikasi();
       }
     } catch (_) {}
   }
@@ -167,6 +173,7 @@ class NotifikasiController extends GetxController {
           'is_read': false,
         });
         _countUnread();
+        _saveLocalNotifikasi();
       }
 
       getNotifikasi();
@@ -182,6 +189,32 @@ class NotifikasiController extends GetxController {
     if (token == null) return;
     try {
       await _api.dio.post('/notifikasi/fcm-token', data: {'fcm_token': token});
+    } catch (_) {}
+  }
+
+  Future<void> _loadLocalNotifikasi() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_localNotifKey);
+      if (raw == null || raw.isEmpty) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        final local = decoded
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        if (local.isNotEmpty) {
+          notifikasiList.value = local;
+          _countUnread();
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveLocalNotifikasi() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_localNotifKey, jsonEncode(notifikasiList));
     } catch (_) {}
   }
 }

@@ -6,8 +6,14 @@ import '../../notifikasi/controllers/notifikasi_controller.dart';
 class HomeBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<HomeController>(() => HomeController());
-    Get.lazyPut<LaporanController>(() => LaporanController());
-    Get.lazyPut<NotifikasiController>(() => NotifikasiController());
+    if (!Get.isRegistered<HomeController>()) {
+      Get.lazyPut<HomeController>(() => HomeController(), fenix: true);
+    }
+    if (!Get.isRegistered<LaporanController>()) {
+      Get.lazyPut<LaporanController>(() => LaporanController(), fenix: true);
+    }
+    if (!Get.isRegistered<NotifikasiController>()) {
+      Get.lazyPut<NotifikasiController>(() => NotifikasiController(), fenix: true);
+    }
   }
 }

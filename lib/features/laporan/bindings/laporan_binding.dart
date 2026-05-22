@@ -4,6 +4,8 @@ import '../controllers/laporan_controller.dart';
 class LaporanBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<LaporanController>(() => LaporanController());
+    if (!Get.isRegistered<LaporanController>()) {
+      Get.lazyPut<LaporanController>(() => LaporanController(), fenix: true);
+    }
   }
 }
