@@ -238,6 +238,29 @@ exports.sendBroadcast = async (req, res) => {
     const tokens = tokenSnapshot.docs
       .map((doc) => doc.data().token)
       .filter(Boolean);
+      
+    // ambil semua user warga
+    const [wargaRows] = await pool.query(
+      `SELECT id FROM users WHERE role = 'warga'`
+    );
+
+    // simpan ke tabel notifikasi
+    if (wargaRows.length > 0) {
+      const notifValues = wargaRows.map((warga) => [
+        warga.id,
+        null,
+        title,
+        message,
+        false,
+      ]);
+
+      await pool.query(
+        `INSERT INTO notifikasi
+        (user_id, laporan_id, title, message, is_read)
+        VALUES ?`,
+        [notifValues]
+      );
+    }
 
     let result = { successCount: 0, failureCount: 0 };
 

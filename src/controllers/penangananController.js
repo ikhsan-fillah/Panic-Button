@@ -31,6 +31,29 @@ exports.store = async (req, res) => {
       [status, laporan_id]
     );
 
+    // ambil data pemilik laporan
+    const [laporanRows] = await pool.query(
+      'SELECT user_id, judul FROM laporan WHERE id = ?',
+      [laporan_id]
+    );
+
+    if (laporanRows.length > 0) {
+      const laporan = laporanRows[0];
+
+      // simpan notifikasi untuk warga
+      await pool.query(
+        `INSERT INTO notifikasi
+        (user_id, laporan_id, title, message, is_read)
+        VALUES (?, ?, ?, ?, false)`,
+        [
+          laporan.user_id,
+          laporan_id,
+          `Update Laporan: ${laporan.judul}`,
+          catatan || `Status laporan diubah menjadi ${status}`,
+        ]
+      );
+    }
+
     await pool.query(
       `INSERT INTO riwayat_respon
        (laporan_id, changed_by, status, catatan)
@@ -127,7 +150,28 @@ exports.updateByLaporan = async (req, res) => {
         req.params.laporan_id,
       ]
     );
+    // ambil data pemilik laporan
+    const [laporanRows] = await pool.query(
+      'SELECT user_id, judul FROM laporan WHERE id = ?',
+      [req.params.laporan_id]
+    );
 
+    if (laporanRows.length > 0) {
+      const laporan = laporanRows[0];
+
+      // simpan notifikasi untuk warga
+      await pool.query(
+        `INSERT INTO notifikasi
+        (user_id, laporan_id, title, message, is_read)
+        VALUES (?, ?, ?, ?, false)`,
+        [
+          laporan.user_id,
+          req.params.laporan_id,
+          `Update Laporan: ${laporan.judul}`,
+          updatedCatatan || `Status laporan diubah menjadi ${updatedStatus}`,
+        ]
+      );
+    }
     await pool.query(
       `INSERT INTO riwayat_respon
        (laporan_id, changed_by, status, catatan)
