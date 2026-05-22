@@ -33,6 +33,9 @@ class HomeController extends GetxController {
     super.onClose();
   }
 
+  /// Dipanggil dari RiwayatLaporanScreen untuk refresh data
+  Future<void> refreshRiwayat() => _laporan.getRiwayat();
+
   void _listenNotifikasi() {
     final uid = _auth.currentUser.value?.id;
     if (uid == null) return;

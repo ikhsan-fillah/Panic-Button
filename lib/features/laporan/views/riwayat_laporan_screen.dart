@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/laporan_controller.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/laporan_model.dart';
+import '../../home/controllers/home_controller.dart';
 import '../../home/widgets/riwayat_card_widget.dart';
 
 class RiwayatLaporanScreen extends StatefulWidget {
@@ -14,16 +14,19 @@ class RiwayatLaporanScreen extends StatefulWidget {
 
 class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
     with SingleTickerProviderStateMixin {
-  final LaporanController _ctrl = Get.find();
   late TabController _tabCtrl;
-
   static const List<String> _tabs = ['Semua', 'Aktif', 'Selesai'];
+
+  // Pakai HomeController — sumber data yang sama dengan home screen
+  late final HomeController _home;
 
   @override
   void initState() {
     super.initState();
+    _home = Get.find<HomeController>();
     _tabCtrl = TabController(length: _tabs.length, vsync: this);
-    _ctrl.getRiwayat();
+    // Refresh data saat halaman dibuka
+    _home.refreshRiwayat();
   }
 
   @override
@@ -33,7 +36,7 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
   }
 
   List<LaporanModel> _filtered(int tabIndex) {
-    final all = _ctrl.riwayatLaporan.toList();
+    final all = (_home.riwayatLaporan as RxList).cast<LaporanModel>().toList();
     if (tabIndex == 0) return all;
     if (tabIndex == 1) {
       return all.where((l) {
@@ -50,7 +53,9 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.bgPrimary,
       appBar: AppBar(
+        backgroundColor: AppTheme.bgPrimary,
         title: const Text('Riwayat Laporan'),
         bottom: TabBar(
           controller: _tabCtrl,
@@ -59,11 +64,12 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
           labelColor: AppTheme.primary,
           unselectedLabelColor: AppTheme.textMuted,
           indicatorWeight: 2,
-          labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          labelStyle:
+              const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
       ),
       body: Obx(() {
-        if (_ctrl.isLoading.value) {
+        if (_home.isLoadingRiwayat.value) {
           return _buildSkeleton();
         }
         return TabBarView(
@@ -72,14 +78,18 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
             final items = _filtered(i);
             if (items.isEmpty) return _buildEmpty(i);
             return RefreshIndicator(
-              onRefresh: _ctrl.getRiwayat,
+              onRefresh: _home.refreshRiwayat,
               color: AppTheme.primary,
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
                 itemCount: items.length,
-                itemBuilder: (_, idx) => RiwayatCardWidget(
-                  laporan: items[idx],
-                  index: idx,
+                itemBuilder: (_, idx) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: RiwayatCardWidget(
+                    laporan: items[idx],
+                    index: idx,
+                  ),
                 ),
               ),
             );
@@ -90,24 +100,28 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
   }
 
   Widget _buildEmpty(int tabIndex) {
-    final messages = [
-      'Belum ada laporan\nLaporan yang kamu kirim akan muncul di sini',
-      'Tidak ada laporan aktif\nSemua laporan sudah selesai ditangani',
-      'Belum ada laporan selesai\nLaporan yang selesai akan muncul di sini',
+    const messages = [
+      ['Belum ada laporan', 'Laporan yang kamu kirim akan muncul di sini'],
+      ['Tidak ada laporan aktif', 'Semua laporan sudah selesai ditangani'],
+      ['Belum ada laporan selesai', 'Laporan yang selesai akan muncul di sini'],
     ];
-    final parts = messages[tabIndex].split('\n');
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.inbox_outlined, size: 64, color: AppTheme.textMuted.withOpacity(0.3)),
+          Icon(Icons.inbox_outlined,
+              size: 64, color: AppTheme.textMuted.withOpacity(0.3)),
           const SizedBox(height: 16),
-          Text(parts[0],
-              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(messages[tabIndex][0],
+              style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          Text(parts[1],
+          Text(messages[tabIndex][1],
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
+              style:
+                  const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
         ],
       ),
     );
