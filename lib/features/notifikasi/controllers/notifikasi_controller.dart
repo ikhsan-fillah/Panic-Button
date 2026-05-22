@@ -62,9 +62,23 @@ class NotifikasiController extends GetxController {
   Future<void> saveFcmToken() async {
     try {
       final token = await FirebaseMessaging.instance.getToken();
+
+      print("FCM TOKEN: $token");
+
       if (token == null) return;
-      await _api.dio.post('/notifikasi/fcm-token', data: {'fcm_token': token});
-    } catch (_) {}
+
+      final res = await _api.dio.post(
+        '/notifikasi/fcm-token',
+        data: {
+          'fcm_token': token,
+        },
+      );
+
+      print("SAVE TOKEN SUCCESS");
+      print(res.data);
+    } catch (e) {
+      print("SAVE TOKEN ERROR: $e");
+    }
   }
 
   void _updateUnreadCount() {

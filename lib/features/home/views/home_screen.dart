@@ -147,19 +147,33 @@ class HomeScreen extends StatelessWidget {
                 ),
               )),
           const SizedBox(width: 8),
-          // Avatar / logout
+          // Logout
           GestureDetector(
             onTap: () => Get.find<AuthController>().logout(),
             child: Container(
-              width: 40,
+              width: 92,
               height: 40,
               decoration: BoxDecoration(
                 color: AppTheme.bgSurface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFF2E2E2E)),
               ),
-              child: const Icon(Icons.person_outline,
-                  color: AppTheme.textSecondary, size: 20),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.logout_rounded,
+                      color: AppTheme.textSecondary, size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'Logout',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
