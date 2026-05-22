@@ -6,7 +6,7 @@ class AppConstants {
   // Production   : 'https://your-domain.com/api'
   // CATATAN: Backend pakai Node.js/Express (bukan Laravel), port 3000
   // ============================================================
-  static const String baseUrl = 'http://10.0.2.2:3000/api';
+  static const String baseUrl = 'https://panic-button-api-311142907128.us-central1.run.app/api';
 
   // Timeout
   static const int connectTimeout = 30000;

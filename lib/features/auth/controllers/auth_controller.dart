@@ -14,6 +14,40 @@ class AuthController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
 
+  String _resolveDioError(
+    DioException e, {
+    required String fallback,
+  }) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final msg = data['message']?.toString().trim();
+      if (msg != null && msg.isNotEmpty) return msg;
+      final err = data['error']?.toString().trim();
+      if (err != null && err.isNotEmpty) return err;
+    }
+    if (data is String && data.trim().isNotEmpty) return data.trim();
+
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'Koneksi timeout. Cek internet lalu coba lagi.';
+      case DioExceptionType.connectionError:
+        return 'Tidak dapat terhubung ke server. Cek URL API dan koneksi internet.';
+      case DioExceptionType.badResponse:
+        final code = e.response?.statusCode;
+        if (code == 404) return 'Endpoint tidak ditemukan (404). Cek base URL dan path API.';
+        if (code == 500) return 'Server sedang bermasalah (500). Coba beberapa saat lagi.';
+        return 'Request gagal (HTTP $code).';
+      case DioExceptionType.cancel:
+        return 'Request dibatalkan.';
+      case DioExceptionType.badCertificate:
+        return 'Sertifikat SSL server tidak valid.';
+      case DioExceptionType.unknown:
+        return 'Terjadi gangguan jaringan. Coba lagi.';
+    }
+  }
+
   // Expose user data ke seluruh app
   UserModel? get user => _auth.currentUser.value;
   int? get userId => _auth.userId;
@@ -44,7 +78,10 @@ class AuthController extends GetxController {
 
       Get.offAllNamed(AppRoutes.home);
     } on DioException catch (e) {
-      errorMessage.value = e.response?.data['message'] ?? 'Login gagal. Coba lagi.';
+      errorMessage.value = _resolveDioError(
+        e,
+        fallback: 'Login gagal. Coba lagi.',
+      );
     } finally {
       isLoading.value = false;
     }
@@ -77,7 +114,10 @@ class AuthController extends GetxController {
         duration: const Duration(seconds: 3),
       );
     } on DioException catch (e) {
-      errorMessage.value = e.response?.data['message'] ?? 'Registrasi gagal. Coba lagi.';
+      errorMessage.value = _resolveDioError(
+        e,
+        fallback: 'Registrasi gagal. Coba lagi.',
+      );
     } finally {
       isLoading.value = false;
     }
