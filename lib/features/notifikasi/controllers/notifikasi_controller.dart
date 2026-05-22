@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart' as dio;
 import '../../../core/services/api_service.dart';
 import '../models/notifikasi_model.dart';
 
@@ -20,13 +21,10 @@ class NotifikasiController extends GetxController {
   Future<void> getNotifikasi() async {
     try {
       isLoading.value = true;
-      final response = await _api.get('/notifikasi');
-      if (response.statusCode == 200) {
-        final List data = response.body is List ? response.body : [];
-        notifikasi.value =
-            data.map((e) => NotifikasiModel.fromJson(e)).toList();
-        _updateUnreadCount();
-      }
+      final res = await _api.dio.get('/notifikasi');
+      final List data = res.data is List ? res.data : [];
+      notifikasi.value = data.map((e) => NotifikasiModel.fromJson(e)).toList();
+      _updateUnreadCount();
     } catch (_) {
     } finally {
       isLoading.value = false;
@@ -35,23 +33,21 @@ class NotifikasiController extends GetxController {
 
   Future<void> markRead(int id) async {
     try {
-      final response = await _api.put('/notifikasi/$id/read', {});
-      if (response.statusCode == 200) {
-        final idx = notifikasi.indexWhere((n) => n.id == id);
-        if (idx != -1) {
-          final old = notifikasi[idx];
-          notifikasi[idx] = NotifikasiModel(
-            id: old.id,
-            userId: old.userId,
-            laporanId: old.laporanId,
-            title: old.title,
-            message: old.message,
-            isRead: true,
-            createdAt: old.createdAt,
-          );
-          notifikasi.refresh();
-          _updateUnreadCount();
-        }
+      await _api.dio.put('/notifikasi/$id/read');
+      final idx = notifikasi.indexWhere((n) => n.id == id);
+      if (idx != -1) {
+        final old = notifikasi[idx];
+        notifikasi[idx] = NotifikasiModel(
+          id: old.id,
+          userId: old.userId,
+          laporanId: old.laporanId,
+          title: old.title,
+          message: old.message,
+          isRead: true,
+          createdAt: old.createdAt,
+        );
+        notifikasi.refresh();
+        _updateUnreadCount();
       }
     } catch (_) {}
   }
@@ -67,7 +63,7 @@ class NotifikasiController extends GetxController {
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null) return;
-      await _api.post('/notifikasi/fcm-token', {'fcm_token': token});
+      await _api.dio.post('/notifikasi/fcm-token', data: {'fcm_token': token});
     } catch (_) {}
   }
 
