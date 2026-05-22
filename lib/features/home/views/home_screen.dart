@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../notifikasi/controllers/notifikasi_controller.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
 import '../widgets/sos_bottom_sheet.dart';
@@ -44,6 +45,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(HomeController home) {
+    final NotifikasiController notifCtrl = Get.isRegistered<NotifikasiController>()
+        ? Get.find<NotifikasiController>()
+        : Get.put(NotifikasiController());
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
       decoration: const BoxDecoration(
@@ -75,7 +79,7 @@ class HomeScreen extends StatelessWidget {
           ),
           // Notif bell
           Obx(() => GestureDetector(
-                onTap: () {},
+                onTap: () => Get.toNamed(AppRoutes.notifikasi),
                 child: Container(
                   width: 40,
                   height: 40,
@@ -89,7 +93,43 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       const Icon(Icons.notifications_outlined,
                           color: AppTheme.textSecondary, size: 20),
-                      if (home.hasActiveAlert.value)
+                      if (notifCtrl.unreadCount.value > 0)
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 14,
+                              minHeight: 14,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 3,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.danger,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppTheme.bgSurface,
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              notifCtrl.unreadCount.value > 99
+                                  ? '99+'
+                                  : '${notifCtrl.unreadCount.value}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (notifCtrl.unreadCount.value <= 0 &&
+                          home.hasActiveAlert.value)
                         Positioned(
                           right: 8,
                           top: 8,
@@ -182,16 +222,6 @@ class HomeScreen extends StatelessWidget {
       children: [
         Expanded(
           child: _quickTile(
-            icon: Icons.history_rounded,
-            label: 'Riwayat',
-            sub: 'Laporan saya',
-            color: AppTheme.accent,
-            onTap: () => Get.toNamed(AppRoutes.riwayatLaporan),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _quickTile(
             icon: Icons.phone_in_talk_rounded,
             label: 'Hubungi',
             sub: 'Satpam pos',
@@ -199,7 +229,7 @@ class HomeScreen extends StatelessWidget {
             onTap: () {},
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 16),
         Expanded(
           child: _quickTile(
             icon: Icons.map_outlined,

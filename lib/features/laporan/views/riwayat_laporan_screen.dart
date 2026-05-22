@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import '../controllers/laporan_controller.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/routes/app_routes.dart';
 import '../models/laporan_model.dart';
+import '../../home/widgets/riwayat_card_widget.dart';
 
 class RiwayatLaporanScreen extends StatefulWidget {
   const RiwayatLaporanScreen({super.key});
@@ -34,10 +33,18 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
   }
 
   List<LaporanModel> _filtered(int tabIndex) {
-    final all = _ctrl.riwayatLaporan;
+    final all = _ctrl.riwayatLaporan.toList();
     if (tabIndex == 0) return all;
-    if (tabIndex == 1) return all.where((l) => !['selesai', 'cancel'].contains(l.status)).toList();
-    return all.where((l) => ['selesai', 'cancel'].contains(l.status)).toList();
+    if (tabIndex == 1) {
+      return all.where((l) {
+        final s = l.status.toLowerCase().trim();
+        return !['selesai', 'cancel', 'dibatalkan'].contains(s);
+      }).toList();
+    }
+    return all.where((l) {
+      final s = l.status.toLowerCase().trim();
+      return ['selesai', 'cancel', 'dibatalkan'].contains(s);
+    }).toList();
   }
 
   @override
@@ -70,96 +77,15 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 itemCount: items.length,
-                itemBuilder: (_, idx) => _buildCard(items[idx], idx),
+                itemBuilder: (_, idx) => RiwayatCardWidget(
+                  laporan: items[idx],
+                  index: idx,
+                ),
               ),
             );
           }),
         );
       }),
-    );
-  }
-
-  Widget _buildCard(LaporanModel l, int index) {
-    final statusColor = AppTheme.statusColor(l.status);
-    final statusLabel = AppTheme.statusLabel(l.status);
-    final date = DateTime.tryParse(l.createdAt);
-    final dateStr = date != null
-        ? DateFormat('dd MMM yyyy, HH:mm', 'id_ID').format(date)
-        : l.createdAt;
-    final priorityColor = l.priority == 'tinggi'
-        ? AppTheme.danger
-        : l.priority == 'sedang'
-            ? AppTheme.warning
-            : AppTheme.success;
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 300 + index * 60),
-      curve: Curves.easeOut,
-      builder: (_, v, child) => Opacity(opacity: v, child: child),
-      child: GestureDetector(
-        onTap: () => Get.toNamed(AppRoutes.detailLaporan, arguments: l.id),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.bgCard,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2E2E2E)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(l.judul,
-                        style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                    child: Row(
-                      children: [
-                        Container(width: 6, height: 6,
-                            decoration: BoxDecoration(shape: BoxShape.circle, color: priorityColor)),
-                        const SizedBox(width: 4),
-                        Text(l.priority.toUpperCase(),
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: priorityColor)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(dateStr, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(statusLabel,
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: statusColor)),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppTheme.textMuted, size: 18),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

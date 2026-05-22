@@ -43,7 +43,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
         ],
       ),
       body: Obx(() {
-        if (_ctrl.isLoading.value) {
+        if (_ctrl.isLoadingDetail.value) {
           return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
         }
         final l = _ctrl.currentLaporan.value;

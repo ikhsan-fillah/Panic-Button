@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../laporan/controllers/laporan_controller.dart';
+import '../../notifikasi/controllers/notifikasi_controller.dart';
 
 class HomeController extends GetxController {
   final AuthService _auth = Get.find();
@@ -21,6 +22,9 @@ class HomeController extends GetxController {
     super.onInit();
     _listenNotifikasi();
     _laporan.getRiwayat();
+    try {
+      Get.find<NotifikasiController>().saveFcmToken();
+    } catch (_) {}
   }
 
   @override

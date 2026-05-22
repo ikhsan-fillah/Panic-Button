@@ -4,6 +4,7 @@ import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../notifikasi/controllers/notifikasi_controller.dart';
 import '../models/user_model.dart';
 
 class AuthController extends GetxController {
@@ -77,6 +78,21 @@ class AuthController extends GetxController {
       await _saveFcmToken();
 
       Get.offAllNamed(AppRoutes.home);
+      Future.delayed(const Duration(milliseconds: 500), () async {
+        try {
+          final notifCtrl = Get.find<NotifikasiController>();
+          await notifCtrl.saveFcmToken();
+        } catch (_) {
+          final token = _firebase.fcmToken ?? await _firebase.initAndGetToken();
+          if (token != null) {
+            try {
+              await _api.dio.post('/notifikasi/fcm-token', data: {
+                'fcm_token': token,
+              });
+            } catch (_) {}
+          }
+        }
+      });
     } on DioException catch (e) {
       errorMessage.value = _resolveDioError(
         e,

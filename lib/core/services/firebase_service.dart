@@ -59,6 +59,9 @@ class FirebaseService extends GetxService {
 
   Future<void> _initFCM() async {
     await initAndGetToken();
+    _messaging.onTokenRefresh.listen((token) {
+      fcmToken = token;
+    });
 
     // Foreground notification handler
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
@@ -132,6 +135,14 @@ class FirebaseService extends GetxService {
     return _firestore
         .collection('sos_notifications')
         .doc(userId.toString())
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> listenBroadcast() {
+    return _firestore
+        .collection('emergency_broadcast')
+        .orderBy('created_at', descending: true)
+        .limit(1)
         .snapshots();
   }
 

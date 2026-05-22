@@ -17,8 +17,11 @@ class LaporanController extends GetxController {
   final RxList<LaporanModel> riwayatLaporan = <LaporanModel>[].obs;
   final Rx<LaporanModel?> currentLaporan = Rx<LaporanModel?>(null);
   final RxBool isLoading = false.obs;
+  final RxBool isLoadingDetail = false.obs;
   final RxBool isSendingSOS = false.obs;
   final RxString errorMessage = ''.obs;
+  final RxList<Map<String, dynamic>> kategoriList = <Map<String, dynamic>>[].obs;
+  final RxBool isLoadingKategori = false.obs;
 
   // GPS
   final RxDouble currentLat = 0.0.obs;
@@ -36,11 +39,24 @@ class LaporanController extends GetxController {
   final RxBool isFirebaseConnected = true.obs;
   StreamSubscription? _realtimeStatusSub;
   Worker? _firebaseConnectivityWorker;
+  static const List<Map<String, dynamic>> _defaultKategori = [
+    {'id': 10, 'nama': 'Lainnya'},
+    {'id': 9, 'nama': 'Gangguan Keamanan'},
+    {'id': 8, 'nama': 'Kerusakan Fasilitas'},
+    {'id': 7, 'nama': 'Kehilangan'},
+    {'id': 6, 'nama': 'Bencana Alam'},
+    {'id': 5, 'nama': 'Darurat Medis'},
+    {'id': 4, 'nama': 'Perkelahian'},
+    {'id': 3, 'nama': 'Kecelakaan'},
+    {'id': 2, 'nama': 'Kebakaran'},
+    {'id': 1, 'nama': 'Pencurian'},
+  ];
 
   @override
   void onInit() {
     super.onInit();
     getLocation();
+    getKategori();
     // Bind Firebase connectivity
     _firebaseConnectivityWorker = ever(_firebase.isConnected, (connected) {
       isFirebaseConnected.value = connected;
@@ -52,6 +68,49 @@ class LaporanController extends GetxController {
     _realtimeStatusSub?.cancel();
     _firebaseConnectivityWorker?.dispose();
     super.onClose();
+  }
+
+  // ----------------------------------------------------------
+  // GET KATEGORI
+  // ----------------------------------------------------------
+  Future<void> getKategori() async {
+    isLoadingKategori.value = true;
+    try {
+      final res = await _api.dio.get('/kategori');
+      final raw = res.data['data'] ?? res.data;
+      final fromApi = (raw as List).map((e) {
+        final item = e as Map<String, dynamic>;
+        return {
+          'id': int.tryParse(item['id'].toString()) ?? 0,
+          'nama': item['nama']?.toString() ?? '',
+        };
+      }).where((e) => (e['id'] as int) > 0 && (e['nama'] as String).isNotEmpty).toList();
+
+      final map = <int, Map<String, dynamic>>{};
+      for (final item in fromApi) {
+        map[item['id'] as int] = item;
+      }
+      for (final item in _defaultKategori) {
+        final id = item['id'] as int;
+        map.putIfAbsent(id, () => item);
+      }
+
+      final merged = map.values.toList()
+        ..sort((a, b) => (b['id'] as int).compareTo(a['id'] as int));
+      final ordered = merged.take(10).toList()
+        ..sort((a, b) {
+          final aName = (a['nama']?.toString() ?? '').toLowerCase().trim();
+          final bName = (b['nama']?.toString() ?? '').toLowerCase().trim();
+          if (aName == 'lainnya' && bName != 'lainnya') return 1;
+          if (bName == 'lainnya' && aName != 'lainnya') return -1;
+          return (b['id'] as int).compareTo(a['id'] as int);
+        });
+      kategoriList.value = ordered;
+    } catch (_) {
+      kategoriList.value = List<Map<String, dynamic>>.from(_defaultKategori);
+    } finally {
+      isLoadingKategori.value = false;
+    }
   }
 
   // ----------------------------------------------------------
@@ -113,7 +172,13 @@ class LaporanController extends GetxController {
   // ----------------------------------------------------------
   // KIRIM LAPORAN SOS
   // ----------------------------------------------------------
-  Future<void> kirimLaporan({required String judul, String? deskripsi}) async {
+  Future<void> kirimLaporan({
+    required int kategoriId,
+    required String judul,
+    String? deskripsi,
+    String? priority,
+    String? alamat,
+  }) async {
     if (currentLat.value == 0 && currentLng.value == 0) {
       Get.snackbar('Error', 'GPS belum siap, coba lagi');
       return;
@@ -122,18 +187,25 @@ class LaporanController extends GetxController {
     errorMessage.value = '';
     try {
       final res = await _api.dio.post('/laporan', data: {
+        'kategori_id': kategoriId,
         'judul': judul,
         'deskripsi': deskripsi,
         'latitude': currentLat.value,
         'longitude': currentLng.value,
-        'alamat': currentAddress.value,
-        'priority': selectedPriority.value,
+        'alamat': (alamat != null && alamat.trim().isNotEmpty)
+            ? alamat.trim()
+            : currentAddress.value,
+        'priority': (priority != null && priority.isNotEmpty)
+            ? priority
+            : selectedPriority.value,
       });
       final laporan = LaporanModel.fromJson(res.data['laporan'] ?? res.data);
       currentLaporan.value = laporan;
 
       // Upload foto jika ada
       if (selectedPhoto != null) await uploadFoto(laporan.id);
+      selectedPhoto = null;
+      photoPath.value = '';
 
       // Sinkronkan lokasi aktif user ke Firebase saat SOS berhasil terkirim.
       final userId = _auth.userId;
@@ -187,8 +259,24 @@ class LaporanController extends GetxController {
     isLoading.value = true;
     try {
       final res = await _api.dio.get('/laporan/user');
-      final list = (res.data['data'] ?? res.data) as List;
-      riwayatLaporan.value = list.map((e) => LaporanModel.fromJson(e)).toList();
+      List list;
+      final data = res.data;
+      if (data is List) {
+        list = data;
+      } else if (data is Map && data['data'] is List) {
+        list = data['data'] as List;
+      } else {
+        list = [];
+      }
+      final parsed = <LaporanModel>[];
+      for (final item in list) {
+        if (item is Map) {
+          parsed.add(
+            LaporanModel.fromJson(Map<String, dynamic>.from(item)),
+          );
+        }
+      }
+      riwayatLaporan.value = parsed;
     } on dio.DioException catch (e) {
       errorMessage.value =
           e.response?.data['message'] ?? 'Gagal memuat riwayat';
@@ -201,17 +289,43 @@ class LaporanController extends GetxController {
   // GET DETAIL LAPORAN + REALTIME LISTENER
   // ----------------------------------------------------------
   Future<void> getLaporan(int id) async {
-    isLoading.value = true;
+    isLoadingDetail.value = true;
+    errorMessage.value = '';
+    currentLaporan.value = null;
     try {
       final res = await _api.dio.get('/laporan/$id');
-      currentLaporan.value =
-          LaporanModel.fromJson(res.data['data'] ?? res.data);
+      final data = res.data;
+      Map<String, dynamic>? payload;
 
-      // Mulai listen perubahan status dari Firebase
-      _listenRealtimeStatus(id);
-    } on dio.DioException catch (_) {
+      if (data is Map<String, dynamic>) {
+        final inner = data['data'];
+        if (inner is Map<String, dynamic>) {
+          payload = inner;
+        } else {
+          payload = data;
+        }
+      } else if (data is List && data.isNotEmpty && data.first is Map<String, dynamic>) {
+        payload = data.first as Map<String, dynamic>;
+      }
+
+      if (payload != null) {
+        currentLaporan.value = LaporanModel.fromJson(payload);
+        _listenRealtimeStatus(id);
+      } else {
+        errorMessage.value = 'Detail laporan tidak ditemukan';
+      }
+
+    } on dio.DioException catch (e) {
+      final resData = e.response?.data;
+      if (resData is Map<String, dynamic> && resData['message'] != null) {
+        errorMessage.value = resData['message'].toString();
+      } else {
+        errorMessage.value = 'Gagal memuat detail laporan';
+      }
+    } catch (_) {
+      errorMessage.value = 'Terjadi kesalahan saat memuat detail laporan';
     } finally {
-      isLoading.value = false;
+      isLoadingDetail.value = false;
     }
   }
 

@@ -65,6 +65,10 @@ class _FormLaporanScreenState extends State<FormLaporanScreen>
 
   @override
   Widget build(BuildContext context) {
+    final args = Get.arguments;
+    final kategoriId = args is Map && args['kategori_id'] is int
+        ? args['kategori_id'] as int
+        : 1;
     return Scaffold(
       backgroundColor: AppTheme.bgPrimary,
       appBar: AppBar(
@@ -213,8 +217,10 @@ class _FormLaporanScreenState extends State<FormLaporanScreen>
                             : () {
                                 if (_formKey.currentState!.validate()) {
                                   _ctrl.kirimLaporan(
+                                    kategoriId: kategoriId,
                                     judul: _judulCtrl.text.trim(),
                                     deskripsi: _deskripsiCtrl.text.trim(),
+                                    priority: _ctrl.selectedPriority.value,
                                   );
                                 }
                               },

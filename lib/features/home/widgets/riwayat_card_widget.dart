@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../laporan/models/laporan_model.dart';
 
 class RiwayatCardWidget extends StatefulWidget {
-  final Map<String, dynamic> laporan;
+  final LaporanModel laporan;
   final int index;
 
   const RiwayatCardWidget({
@@ -53,13 +54,13 @@ class _RiwayatCardWidgetState extends State<RiwayatCardWidget>
   @override
   Widget build(BuildContext context) {
     final laporan = widget.laporan;
-    final status = (laporan['status'] ?? 'pending') as String;
+    final status = laporan.status;
     final statusColor = AppTheme.statusColor(status);
     final statusLabel = AppTheme.statusLabel(status);
-    final judul = (laporan['judul'] ?? 'Laporan Darurat') as String;
-    final alamat = (laporan['alamat'] ?? '-') as String;
-    final createdAt = (laporan['created_at'] ?? '') as String;
-    final priority = (laporan['priority'] ?? 'sedang') as String;
+    final judul = laporan.judul.isNotEmpty ? laporan.judul : 'Laporan Darurat';
+    final alamat = (laporan.alamat ?? '').isNotEmpty ? laporan.alamat! : '-';
+    final createdAt = laporan.createdAt;
+    final priority = laporan.priority;
 
     return FadeTransition(
       opacity: _fadeAnim,
@@ -68,7 +69,7 @@ class _RiwayatCardWidgetState extends State<RiwayatCardWidget>
         child: GestureDetector(
           onTap: () => Get.toNamed(
             AppRoutes.detailLaporan,
-            arguments: laporan,
+            arguments: laporan.id,
           ),
           child: Container(
             padding: const EdgeInsets.all(14),

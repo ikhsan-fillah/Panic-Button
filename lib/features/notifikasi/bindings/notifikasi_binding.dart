@@ -4,6 +4,8 @@ import '../controllers/notifikasi_controller.dart';
 class NotifikasiBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<NotifikasiController>(() => NotifikasiController());
+    if (!Get.isRegistered<NotifikasiController>()) {
+      Get.lazyPut<NotifikasiController>(() => NotifikasiController());
+    }
   }
 }
