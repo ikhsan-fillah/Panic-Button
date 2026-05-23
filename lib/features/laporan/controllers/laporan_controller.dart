@@ -205,11 +205,16 @@ class LaporanController extends GetxController {
             ? priority
             : selectedPriority.value,
       });
-      final laporan = LaporanModel.fromJson(res.data['laporan'] ?? res.data);
-      currentLaporan.value = laporan;
 
-      // Upload foto jika ada
-      if (selectedPhoto != null) await uploadFoto(laporan.id);
+      final laporanId = res.data['laporan_id'];
+
+      if (laporanId == null) {
+        throw Exception('laporan_id tidak ditemukan');
+      }
+
+      if (selectedPhoto != null) {
+        await uploadFoto(laporanId);
+      }
       selectedPhoto = null;
       photoPath.value = '';
 
@@ -252,7 +257,13 @@ class LaporanController extends GetxController {
           filename: 'foto_laporan.jpg',
         ),
       });
-      await _api.dio.post('/laporan/$laporanId/foto', data: formData);
+      await _api.dio.post(
+        '/laporan/$laporanId/foto',
+        data: formData,
+        options: dio.Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
     } catch (_) {
       // Silent fail — foto tidak krusial untuk flow SOS
     }

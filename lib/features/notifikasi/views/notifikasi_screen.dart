@@ -142,6 +142,9 @@ class _NotifCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
+        print('[NOTIF TAP] notif.id: ${notif.id}');
+        print('[NOTIF TAP] notif.laporanId: ${notif.laporanId}');
+        print('[NOTIF TAP] notif.title: ${notif.title}'); 
         if (!notif.isRead) ctrl.markRead(notif.id);
         if (!isBroadcast && notif.laporanId != null) {
           Get.toNamed(
@@ -154,12 +157,14 @@ class _NotifCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color:
-              notif.isRead ? AppTheme.bgCard : AppTheme.primary.withOpacity(0.06),
+          color: notif.isRead
+              ? AppTheme.bgCard
+              : AppTheme.primary.withOpacity(0.06),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color:
-                notif.isRead ? const Color(0xFF252525) : AppTheme.primary.withOpacity(0.25),
+            color: notif.isRead
+                ? const Color(0xFF252525)
+                : AppTheme.primary.withOpacity(0.25),
           ),
         ),
         child: Row(
@@ -186,8 +191,9 @@ class _NotifCard extends StatelessWidget {
                           notif.title,
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight:
-                                notif.isRead ? FontWeight.w500 : FontWeight.w700,
+                            fontWeight: notif.isRead
+                                ? FontWeight.w500
+                                : FontWeight.w700,
                             color: AppTheme.textPrimary,
                           ),
                           maxLines: 1,
@@ -209,14 +215,16 @@ class _NotifCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     notif.message,
-                    style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                    style: const TextStyle(
+                        fontSize: 12, color: AppTheme.textMuted),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _formatTime(notif.createdAt),
-                    style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                    style: const TextStyle(
+                        fontSize: 10, color: AppTheme.textMuted),
                   ),
                 ],
               ),
