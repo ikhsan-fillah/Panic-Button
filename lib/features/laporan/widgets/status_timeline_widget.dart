@@ -3,7 +3,8 @@ import '../../../core/theme/app_theme.dart';
 
 class StatusTimelineWidget extends StatefulWidget {
   final String currentStatus;
-  final String? catatanPetugas;
+  final String? catatanPetugas; // catatan dari satpam, null = tampil teks default
+
   const StatusTimelineWidget({
     super.key,
     required this.currentStatus,
@@ -81,6 +82,14 @@ class _StatusTimelineWidgetState extends State<StatusTimelineWidget>
             final isActive = i == _currentIndex;
             final isLast = i == _steps.length - 1;
 
+            // Teks deskripsi: tampilkan catatan petugas hanya di step AKTIF
+            // Jika tidak ada catatan, fallback ke teks default
+            final descText = (isActive &&
+                    widget.catatanPetugas != null &&
+                    widget.catatanPetugas!.trim().isNotEmpty)
+                ? widget.catatanPetugas!
+                : step['desc'] as String;
+
             return FadeTransition(
               opacity: CurvedAnimation(
                 parent: _animCtrl,
@@ -149,14 +158,12 @@ class _StatusTimelineWidgetState extends State<StatusTimelineWidget>
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            (isActive &&
-                                    widget.catatanPetugas != null &&
-                                    widget.catatanPetugas!.trim().isNotEmpty)
-                                ? widget.catatanPetugas!.trim()
-                                : step['desc'] as String,
+                            descText,
                             style: TextStyle(
                               fontSize: 12,
-                              color: isDone ? AppTheme.textSecondary : AppTheme.textMuted.withOpacity(0.5),
+                              color: isDone
+                                  ? AppTheme.textSecondary
+                                  : AppTheme.textMuted.withOpacity(0.5),
                             ),
                           ),
                         ],

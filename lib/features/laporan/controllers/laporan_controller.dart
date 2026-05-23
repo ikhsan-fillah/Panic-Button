@@ -382,6 +382,8 @@ class LaporanController extends GetxController {
               '')
           .toString()
           .trim();
+
+      // FIX: update catatanPetugas.obs agar widget StatusTimeline reaktif
       catatanPetugas.value = catatan;
 
       if (currentLaporan.value == null) return;
@@ -411,7 +413,6 @@ class LaporanController extends GetxController {
     } catch (_) {}
   }
 
-
   void _listenRealtimeStatus(int laporanId) {
     _realtimeStatusSub?.cancel();
     _realtimeStatusSub = _firebase.listenLaporanStatus(laporanId).listen((event) {
@@ -421,8 +422,13 @@ class LaporanController extends GetxController {
         final newCatatan =
             (data['catatan'] ?? data['catatan_penanganan'])?.toString();
         if (newStatus != null && currentLaporan.value != null) {
-          // Update status di UI tanpa fetch ulang ke API
           realtimeStatus.value = newStatus;
+
+          // FIX: update catatanPetugas.obs saat ada update realtime dari Firebase
+          if (newCatatan != null && newCatatan.trim().isNotEmpty) {
+            catatanPetugas.value = newCatatan.trim();
+          }
+
           final current = currentLaporan.value!;
           currentLaporan.value = LaporanModel(
             id: current.id,
@@ -433,7 +439,7 @@ class LaporanController extends GetxController {
             longitude: current.longitude,
             alamat: current.alamat,
             priority: current.priority,
-            status: newStatus, // <-- update status realtime
+            status: newStatus,
             catatan: (newCatatan != null && newCatatan.trim().isNotEmpty)
                 ? newCatatan
                 : current.catatan,
