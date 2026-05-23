@@ -16,6 +16,7 @@ class LaporanController extends GetxController {
 
   final RxList<LaporanModel> riwayatLaporan = <LaporanModel>[].obs;
   final Rx<LaporanModel?> currentLaporan = Rx<LaporanModel?>(null);
+  final RxString catatanPetugas = ''.obs;
   final RxBool isLoading = false.obs;
   final RxBool isLoadingDetail = false.obs;
   final RxBool isSendingSOS = false.obs;
@@ -292,6 +293,7 @@ class LaporanController extends GetxController {
     isLoadingDetail.value = true;
     errorMessage.value = '';
     currentLaporan.value = null;
+    catatanPetugas.value = '';
     try {
       final res = await _api.dio.get('/laporan/$id');
       final data = res.data;
@@ -309,7 +311,9 @@ class LaporanController extends GetxController {
       }
 
       if (payload != null) {
-        currentLaporan.value = LaporanModel.fromJson(payload);
+        final laporan = LaporanModel.fromJson(payload);
+        currentLaporan.value = laporan;
+        await _fetchCatatanPetugas(id);
         _listenRealtimeStatus(id);
       } else {
         errorMessage.value = 'Detail laporan tidak ditemukan';
@@ -329,12 +333,93 @@ class LaporanController extends GetxController {
     }
   }
 
+  Future<void> _fetchCatatanPetugas(int laporanId) async {
+    try {
+      Map<String, dynamic>? payload;
+
+      Future<void> tryEndpoint(String path) async {
+        final res = await _api.dio.get(path);
+        final data = res.data;
+        if (data is Map<String, dynamic>) {
+          final candidates = <dynamic>[
+            data['data'],
+            data['penanganan'],
+            data['result'],
+            data,
+          ];
+          for (final c in candidates) {
+            if (c is Map<String, dynamic>) {
+              payload = c;
+              return;
+            }
+            if (c is List && c.isNotEmpty && c.first is Map<String, dynamic>) {
+              payload = c.first as Map<String, dynamic>;
+              return;
+            }
+          }
+        }
+        if (data is List && data.isNotEmpty && data.first is Map<String, dynamic>) {
+          payload = data.first as Map<String, dynamic>;
+        }
+      }
+
+      try {
+        await tryEndpoint('/penanganan/$laporanId');
+      } catch (_) {}
+
+      if (payload == null) {
+        try {
+          await tryEndpoint('/penanganan/laporan/$laporanId');
+        } catch (_) {}
+      }
+
+      if (payload == null) return;
+
+      final resolvedPayload = payload!;
+      final catatan = (resolvedPayload['catatan'] ??
+              resolvedPayload['note'] ??
+              resolvedPayload['keterangan'] ??
+              '')
+          .toString()
+          .trim();
+      catatanPetugas.value = catatan;
+
+      if (currentLaporan.value == null) return;
+      final laporanStatus = (resolvedPayload['laporan_status'] ??
+              resolvedPayload['status'] ??
+              '')
+          .toString()
+          .trim();
+
+      final current = currentLaporan.value!;
+      currentLaporan.value = LaporanModel(
+        id: current.id,
+        userId: current.userId,
+        kategoriId: current.kategoriId,
+        judul: current.judul,
+        deskripsi: current.deskripsi,
+        latitude: current.latitude,
+        longitude: current.longitude,
+        alamat: current.alamat,
+        priority: current.priority,
+        status: laporanStatus.isNotEmpty ? laporanStatus : current.status,
+        catatan: catatan.isNotEmpty ? catatan : current.catatan,
+        foto: current.foto,
+        createdAt: current.createdAt,
+        updatedAt: current.updatedAt,
+      );
+    } catch (_) {}
+  }
+
+
   void _listenRealtimeStatus(int laporanId) {
     _realtimeStatusSub?.cancel();
     _realtimeStatusSub = _firebase.listenLaporanStatus(laporanId).listen((event) {
       final data = event.data();
       if (data != null) {
         final newStatus = data['status'] as String?;
+        final newCatatan =
+            (data['catatan'] ?? data['catatan_penanganan'])?.toString();
         if (newStatus != null && currentLaporan.value != null) {
           // Update status di UI tanpa fetch ulang ke API
           realtimeStatus.value = newStatus;
@@ -349,6 +434,9 @@ class LaporanController extends GetxController {
             alamat: current.alamat,
             priority: current.priority,
             status: newStatus, // <-- update status realtime
+            catatan: (newCatatan != null && newCatatan.trim().isNotEmpty)
+                ? newCatatan
+                : current.catatan,
             foto: current.foto,
             createdAt: current.createdAt,
             updatedAt: current.updatedAt,

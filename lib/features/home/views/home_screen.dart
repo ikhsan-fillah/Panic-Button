@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../notifikasi/controllers/notifikasi_controller.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
 import '../widgets/sos_bottom_sheet.dart';
@@ -11,6 +13,21 @@ import '../widgets/riwayat_card_widget.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  Future<void> _logout() async {
+    if (Get.isRegistered<AuthController>()) {
+      await Get.find<AuthController>().logout();
+      return;
+    }
+    final auth = Get.find<AuthService>();
+    final api = Get.find<ApiService>();
+    try {
+      await api.dio.post('/auth/logout');
+    } catch (_) {}
+    await auth.clearSession();
+    api.clearToken();
+    Get.offAllNamed(AppRoutes.login);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +46,6 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     const SizedBox(height: 20),
                     _buildSOSArea(context),
-                    const SizedBox(height: 28),
-                    _buildQuickActions(),
                     const SizedBox(height: 28),
                     _buildRiwayatSection(home),
                     const SizedBox(height: 24),
@@ -149,7 +164,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(width: 8),
           // Logout
           GestureDetector(
-            onTap: () => Get.find<AuthController>().logout(),
+            onTap: _logout,
             child: Container(
               width: 92,
               height: 40,
@@ -224,83 +239,6 @@ class HomeScreen extends StatelessWidget {
             Text(
               'Satpam akan segera dihubungi',
               style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return Row(
-      children: [
-        Expanded(
-          child: _quickTile(
-            icon: Icons.phone_in_talk_rounded,
-            label: 'Hubungi',
-            sub: 'Satpam pos',
-            color: AppTheme.info,
-            onTap: () {},
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _quickTile(
-            icon: Icons.map_outlined,
-            label: 'Peta',
-            sub: 'Lokasi rawan',
-            color: AppTheme.success,
-            onTap: () {},
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _quickTile({
-    required IconData icon,
-    required String label,
-    required String sub,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppTheme.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF2A2A2A)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              sub,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppTheme.textMuted,
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

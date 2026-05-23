@@ -70,7 +70,12 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Status Timeline
-              StatusTimelineWidget(currentStatus: l.status),
+              Obx(() => StatusTimelineWidget(
+                    currentStatus: l.status,
+                    catatanPetugas: _ctrl.catatanPetugas.value.isEmpty
+                        ? null
+                        : _ctrl.catatanPetugas.value,
+                  )),
               const SizedBox(height: 16),
 
               // Info Laporan

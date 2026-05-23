@@ -3,7 +3,12 @@ import '../../../core/theme/app_theme.dart';
 
 class StatusTimelineWidget extends StatefulWidget {
   final String currentStatus;
-  const StatusTimelineWidget({super.key, required this.currentStatus});
+  final String? catatanPetugas;
+  const StatusTimelineWidget({
+    super.key,
+    required this.currentStatus,
+    this.catatanPetugas,
+  });
 
   @override
   State<StatusTimelineWidget> createState() => _StatusTimelineWidgetState();
@@ -144,7 +149,11 @@ class _StatusTimelineWidgetState extends State<StatusTimelineWidget>
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            step['desc'] as String,
+                            (isActive &&
+                                    widget.catatanPetugas != null &&
+                                    widget.catatanPetugas!.trim().isNotEmpty)
+                                ? widget.catatanPetugas!.trim()
+                                : step['desc'] as String,
                             style: TextStyle(
                               fontSize: 12,
                               color: isDone ? AppTheme.textSecondary : AppTheme.textMuted.withOpacity(0.5),
