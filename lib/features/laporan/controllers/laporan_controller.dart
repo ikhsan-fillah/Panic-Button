@@ -363,7 +363,7 @@ class LaporanController extends GetxController {
       } else {
         catatanPetugas.value = '';
       }
-    } on dio.DioException catch (e) {
+    } on dio.DioException catch (_) {
       // 404 = belum ada penanganan = normal
       // catatanPetugas tetap '' = semua step tampil teks default
       catatanPetugas.value = '';

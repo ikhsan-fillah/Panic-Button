@@ -36,7 +36,7 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
   }
 
   List<LaporanModel> _filtered(int tabIndex) {
-    final all = (_home.riwayatLaporan as RxList).cast<LaporanModel>().toList();
+    final all = List<LaporanModel>.from(_home.riwayatLaporan);
     if (tabIndex == 0) return all;
     if (tabIndex == 1) {
       return all.where((l) {
@@ -81,8 +81,8 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
               onRefresh: _home.refreshRiwayat,
               color: AppTheme.primary,
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 itemCount: items.length,
                 itemBuilder: (_, idx) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -120,8 +120,7 @@ class _RiwayatLaporanScreenState extends State<RiwayatLaporanScreen>
           const SizedBox(height: 6),
           Text(messages[tabIndex][1],
               textAlign: TextAlign.center,
-              style:
-                  const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
+              style: const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
         ],
       ),
     );

@@ -1,6 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
-import 'package:dio/dio.dart' as dio;
 import '../../../core/services/api_service.dart';
 import '../models/notifikasi_model.dart';
 

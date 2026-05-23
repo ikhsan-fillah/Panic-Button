@@ -22,6 +22,8 @@ class FirebaseService extends GetxService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  FirebaseFirestore get firestore => _firestore;
+
   String? fcmToken;
   final RxBool isConnected = true.obs;
 
@@ -75,16 +77,28 @@ class FirebaseService extends GetxService {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
-    final title = message.notification?.title ?? 'Notifikasi';
-    final body = message.notification?.body ?? '';
+    // Ambil dari notification payload dulu, fallback ke data payload
+    print('[FCM FOREGROUND] message: ${message.data}');
+    print(
+        '[FCM FOREGROUND] notification: ${message.notification?.title} - ${message.notification?.body}');
+    final title = message.notification?.title ??
+        message.data['title'] ??
+        'Update Laporan';
+    final body = message.notification?.body ??
+        message.data['body'] ??
+        message.data['message'] ??
+        '';
     final type = message.data['type'] ?? '';
+    final laporanId = _parseLaporanId(message.data['laporan_id']);
 
-    // Tampilkan snackbar in-app saat notifikasi masuk
+    if (title.isEmpty && body.isEmpty) return; // skip kalau kosong
+
     Get.snackbar(
       title,
       body,
-      backgroundColor:
-          type == 'sos' ? AppTheme.danger.withOpacity(0.95) : AppTheme.bgCard,
+      backgroundColor: type == 'sos'
+          ? AppTheme.danger.withOpacity(0.95)
+          : AppTheme.primary.withOpacity(0.95),
       colorText: Colors.white,
       duration: const Duration(seconds: 5),
       icon: Icon(
@@ -96,6 +110,12 @@ class FirebaseService extends GetxService {
       snackPosition: SnackPosition.TOP,
       margin: const EdgeInsets.all(12),
       borderRadius: 12,
+      // ← Tap snackbar langsung ke detail laporan
+      onTap: (_) {
+        if (laporanId != null) {
+          Get.toNamed(AppRoutes.detailLaporan, arguments: laporanId);
+        }
+      },
     );
   }
 
