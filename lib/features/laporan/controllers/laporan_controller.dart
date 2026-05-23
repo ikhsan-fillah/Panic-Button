@@ -21,7 +21,8 @@ class LaporanController extends GetxController {
   final RxBool isLoadingDetail = false.obs;
   final RxBool isSendingSOS = false.obs;
   final RxString errorMessage = ''.obs;
-  final RxList<Map<String, dynamic>> kategoriList = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> kategoriList =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoadingKategori = false.obs;
 
   // GPS
@@ -79,13 +80,17 @@ class LaporanController extends GetxController {
     try {
       final res = await _api.dio.get('/kategori');
       final raw = res.data['data'] ?? res.data;
-      final fromApi = (raw as List).map((e) {
-        final item = e as Map<String, dynamic>;
-        return {
-          'id': int.tryParse(item['id'].toString()) ?? 0,
-          'nama': item['nama']?.toString() ?? '',
-        };
-      }).where((e) => (e['id'] as int) > 0 && (e['nama'] as String).isNotEmpty).toList();
+      final fromApi = (raw as List)
+          .map((e) {
+            final item = e as Map<String, dynamic>;
+            return {
+              'id': int.tryParse(item['id'].toString()) ?? 0,
+              'nama': item['nama']?.toString() ?? '',
+            };
+          })
+          .where(
+              (e) => (e['id'] as int) > 0 && (e['nama'] as String).isNotEmpty)
+          .toList();
 
       final map = <int, Map<String, dynamic>>{};
       for (final item in fromApi) {
@@ -306,7 +311,9 @@ class LaporanController extends GetxController {
         } else {
           payload = data;
         }
-      } else if (data is List && data.isNotEmpty && data.first is Map<String, dynamic>) {
+      } else if (data is List &&
+          data.isNotEmpty &&
+          data.first is Map<String, dynamic>) {
         payload = data.first as Map<String, dynamic>;
       }
 
@@ -318,7 +325,6 @@ class LaporanController extends GetxController {
       } else {
         errorMessage.value = 'Detail laporan tidak ditemukan';
       }
-
     } on dio.DioException catch (e) {
       final resData = e.response?.data;
       if (resData is Map<String, dynamic> && resData['message'] != null) {
@@ -335,63 +341,51 @@ class LaporanController extends GetxController {
 
   Future<void> _fetchCatatanPetugas(int laporanId) async {
     try {
-      Map<String, dynamic>? payload;
+      final res = await _api.dio.get('/penanganan/$laporanId');
+      final data = res.data as Map<String, dynamic>;
+      final catatan = (data['catatan'] ?? '').toString().trim();
 
-      Future<void> tryEndpoint(String path) async {
-        final res = await _api.dio.get(path);
-        final data = res.data;
-        if (data is Map<String, dynamic>) {
-          final candidates = <dynamic>[
-            data['data'],
-            data['penanganan'],
-            data['result'],
-            data,
-          ];
-          for (final c in candidates) {
-            if (c is Map<String, dynamic>) {
-              payload = c;
-              return;
-            }
-            if (c is List && c.isNotEmpty && c.first is Map<String, dynamic>) {
-              payload = c.first as Map<String, dynamic>;
-              return;
-            }
-          }
-        }
-        if (data is List && data.isNotEmpty && data.first is Map<String, dynamic>) {
-          payload = data.first as Map<String, dynamic>;
-        }
+      // Hanya update jika ada isinya
+      // Jika kosong = satpam tidak isi catatan = tampil teks default
+      if (catatan.isNotEmpty) {
+        catatanPetugas.value = catatan;
+      } else {
+        catatanPetugas.value = '';
+      }
+    } on dio.DioException catch (e) {
+      // 404 = belum ada penanganan = normal
+      // catatanPetugas tetap '' = semua step tampil teks default
+      catatanPetugas.value = '';
+    } catch (_) {
+      catatanPetugas.value = '';
+    }
+  }
+
+  void _listenRealtimeStatus(int laporanId) {
+    _realtimeStatusSub?.cancel();
+    _realtimeStatusSub =
+        _firebase.listenLaporanStatus(laporanId).listen((event) {
+      final data = event.data();
+      if (data == null) {
+        return;
       }
 
-      try {
-        await tryEndpoint('/penanganan/$laporanId');
-      } catch (_) {}
-
-      if (payload == null) {
-        try {
-          await tryEndpoint('/penanganan/laporan/$laporanId');
-        } catch (_) {}
-      }
-
-      if (payload == null) return;
-
-      final resolvedPayload = payload!;
-      final catatan = (resolvedPayload['catatan'] ??
-              resolvedPayload['note'] ??
-              resolvedPayload['keterangan'] ??
-              '')
-          .toString()
-          .trim();
-
-      // FIX: update catatanPetugas.obs agar widget StatusTimeline reaktif
-      catatanPetugas.value = catatan;
-
+      final newStatus = data['status'] as String?;
+      if (newStatus == null) return;
       if (currentLaporan.value == null) return;
-      final laporanStatus = (resolvedPayload['laporan_status'] ??
-              resolvedPayload['status'] ??
-              '')
-          .toString()
-          .trim();
+
+      realtimeStatus.value = newStatus;
+
+      // Backend nulis field 'message' ke Firestore, bukan 'catatan'
+      final rawMessage = (data['message'] ?? '').toString().trim();
+
+      // Filter teks default sistem, hanya tampilkan catatan custom satpam
+      final isDefaultMessage = rawMessage.isEmpty ||
+          rawMessage.startsWith('Status laporan diubah') ||
+          rawMessage == 'Status laporan diperbarui' ||
+          rawMessage == 'Laporan SOS baru diterima';
+
+      catatanPetugas.value = isDefaultMessage ? '' : rawMessage;
 
       final current = currentLaporan.value!;
       currentLaporan.value = LaporanModel(
@@ -404,51 +398,12 @@ class LaporanController extends GetxController {
         longitude: current.longitude,
         alamat: current.alamat,
         priority: current.priority,
-        status: laporanStatus.isNotEmpty ? laporanStatus : current.status,
-        catatan: catatan.isNotEmpty ? catatan : current.catatan,
+        status: newStatus,
+        catatan: isDefaultMessage ? current.catatan : rawMessage,
         foto: current.foto,
         createdAt: current.createdAt,
         updatedAt: current.updatedAt,
       );
-    } catch (_) {}
-  }
-
-  void _listenRealtimeStatus(int laporanId) {
-    _realtimeStatusSub?.cancel();
-    _realtimeStatusSub = _firebase.listenLaporanStatus(laporanId).listen((event) {
-      final data = event.data();
-      if (data != null) {
-        final newStatus = data['status'] as String?;
-        final newCatatan =
-            (data['catatan'] ?? data['catatan_penanganan'])?.toString();
-        if (newStatus != null && currentLaporan.value != null) {
-          realtimeStatus.value = newStatus;
-
-          // FIX: update catatanPetugas.obs saat ada update realtime dari Firebase
-          if (newCatatan != null && newCatatan.trim().isNotEmpty) {
-            catatanPetugas.value = newCatatan.trim();
-          }
-
-          final current = currentLaporan.value!;
-          currentLaporan.value = LaporanModel(
-            id: current.id,
-            userId: current.userId,
-            judul: current.judul,
-            deskripsi: current.deskripsi,
-            latitude: current.latitude,
-            longitude: current.longitude,
-            alamat: current.alamat,
-            priority: current.priority,
-            status: newStatus,
-            catatan: (newCatatan != null && newCatatan.trim().isNotEmpty)
-                ? newCatatan
-                : current.catatan,
-            foto: current.foto,
-            createdAt: current.createdAt,
-            updatedAt: current.updatedAt,
-          );
-        }
-      }
     });
   }
 

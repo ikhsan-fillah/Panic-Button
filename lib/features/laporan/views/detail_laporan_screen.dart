@@ -34,8 +34,10 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
             if (l != null && l.status == 'pending') {
               return TextButton.icon(
                 onPressed: () => _showCancelDialog(l.id),
-                icon: const Icon(Icons.cancel_outlined, size: 16, color: AppTheme.danger),
-                label: const Text('Batalkan', style: TextStyle(color: AppTheme.danger, fontSize: 13)),
+                icon: const Icon(Icons.cancel_outlined,
+                    size: 16, color: AppTheme.danger),
+                label: const Text('Batalkan',
+                    style: TextStyle(color: AppTheme.danger, fontSize: 13)),
               );
             }
             return const SizedBox.shrink();
@@ -44,7 +46,8 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
       ),
       body: Obx(() {
         if (_ctrl.isLoadingDetail.value) {
-          return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
+          return const Center(
+              child: CircularProgressIndicator(color: AppTheme.primary));
         }
         final l = _ctrl.currentLaporan.value;
         if (l == null) {
@@ -70,12 +73,17 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Status Timeline — pass catatanPetugas agar tampil di step aktif
-              Obx(() => StatusTimelineWidget(
-                currentStatus: l.status,
-                catatanPetugas: _ctrl.catatanPetugas.value.trim().isEmpty
-                    ? null
-                    : _ctrl.catatanPetugas.value.trim(),
-              )),
+              Obx(() {
+                final laporan = _ctrl.currentLaporan.value;
+                if (laporan == null) return const SizedBox.shrink();
+                return StatusTimelineWidget(
+                  currentStatus:
+                      laporan.status, // ← selalu fresh dari observable
+                  catatanPetugas: _ctrl.catatanPetugas.value.trim().isEmpty
+                      ? null
+                      : _ctrl.catatanPetugas.value.trim(),
+                );
+              }),
               const SizedBox(height: 16),
 
               // Info Laporan
@@ -84,19 +92,24 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                 children: [
                   _infoRow(Icons.title, 'Judul', l.judul),
                   if (l.deskripsi != null && l.deskripsi!.isNotEmpty)
-                    _infoRow(Icons.description_outlined, 'Deskripsi', l.deskripsi!),
+                    _infoRow(
+                        Icons.description_outlined, 'Deskripsi', l.deskripsi!),
                   _infoRowWidget(
                     Icons.flag_rounded,
                     'Prioritas',
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: priorityColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         l.priority.toUpperCase(),
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: priorityColor),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: priorityColor),
                       ),
                     ),
                   ),
@@ -152,10 +165,13 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.broken_image_outlined, color: AppTheme.textMuted, size: 32),
+                                Icon(Icons.broken_image_outlined,
+                                    color: AppTheme.textMuted, size: 32),
                                 SizedBox(height: 6),
                                 Text('Foto tidak tersedia',
-                                    style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                                    style: TextStyle(
+                                        color: AppTheme.textMuted,
+                                        fontSize: 12)),
                               ],
                             ),
                           ),
@@ -210,7 +226,8 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
           SizedBox(
               width: 80,
               child: Text(label,
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted))),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.textMuted))),
           Expanded(
             child: Text(value,
                 style: const TextStyle(
@@ -233,7 +250,8 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
           SizedBox(
               width: 80,
               child: Text(label,
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted))),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.textMuted))),
           valueWidget,
         ],
       ),
@@ -247,7 +265,8 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppTheme.warning, size: 22),
+            Icon(Icons.warning_amber_rounded,
+                color: AppTheme.warning, size: 22),
             SizedBox(width: 8),
             Text('Batalkan Laporan?',
                 style: TextStyle(color: AppTheme.textPrimary, fontSize: 16)),
@@ -260,13 +279,15 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Tidak', style: TextStyle(color: AppTheme.textSecondary)),
+            child: const Text('Tidak',
+                style: TextStyle(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.danger,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () {
               Get.back();
