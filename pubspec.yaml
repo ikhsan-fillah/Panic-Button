@@ -1,0 +1,45 @@
+name: panic_button
+description: Aplikasi Panic Button - Sistem Pelaporan Darurat Warga
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  get: ^4.6.6
+
+  # HTTP Client
+  dio: ^5.4.3
+
+  # Firebase
+  firebase_core: ^2.27.1
+  firebase_messaging: ^14.7.20
+  cloud_firestore: ^4.17.5
+
+  # Location
+  geolocator: ^11.0.0
+  permission_handler: ^11.3.1
+
+  # Image
+  image_picker: ^1.1.2
+
+  # Storage lokal (token auth)
+  shared_preferences: ^2.2.3
+
+  # UI utilities
+  flutter_spinkit: ^5.2.1
+  cached_network_image: ^3.3.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

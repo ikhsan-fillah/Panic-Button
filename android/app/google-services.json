@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "311142907128",
+    "project_id": "kelas-if-b-kelompok-16",
+    "storage_bucket": "kelas-if-b-kelompok-16.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:311142907128:android:f5167fbe64aec06378cf0d",
+        "android_client_info": {
+          "package_name": "com.example.panic_button"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2PetMb1rnOPbSzz-qbwmCRLiNF6xi9II"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

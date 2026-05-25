@@ -137,40 +137,103 @@ export default function Laporan() {
       {selected && (
         <div style={modal.overlay} onClick={() => setSelected(null)}>
           <div style={modal.box} onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginTop: 0 }}>Detail Laporan #{selected.id}</h3>
-            <p><b>Judul:</b> {selected.judul}</p>
-            <p><b>Deskripsi:</b> {selected.deskripsi}</p>
-            <p><b>Alamat:</b> {selected.alamat}</p>
-            <p><b>Koordinat:</b> {selected.latitude}, {selected.longitude}</p>
-            <p><b>Priority:</b> {selected.priority}</p>
-            {selected.foto && (
-            <img
-              src={
-                selected.foto.startsWith('http')
-                  ? selected.foto
-                  : `https://panic-button-api-311142907128.us-central1.run.app/storage/${selected.foto}`
-              }
-              alt="Foto kejadian"
-              style={{ width: '100%', borderRadius: 8, marginBottom: 12, objectFit: 'cover', maxHeight: 220 }}
-              onError={(e) => {
-                e.target.style.display = 'none'; 
+
+            {/* ── Modal Header ── */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                  Detail Laporan
+                </p>
+                <h3 style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
+                  #{selected.id} — {selected.judul}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelected(null)}
+                style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* ── Info Grid ── */}
+            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '14px 16px', marginBottom: 16, display: 'grid', gap: 10 }}>
+              {[
+                { label: 'Deskripsi',  value: selected.deskripsi || '—' },
+                { label: 'Alamat',     value: selected.alamat },
+                { label: 'Koordinat', value: `${selected.latitude}, ${selected.longitude}` },
+                { label: 'Prioritas', value: selected.priority, capitalize: true },
+              ].map(({ label, value, capitalize }) => (
+                <div key={label} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', width: 72 }}>
+                    {label}
+                  </span>
+                  <span style={{ fontSize: 13, color: '#334155', textTransform: capitalize ? 'capitalize' : 'none', lineHeight: 1.5 }}>
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Rute Button ── */}
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${selected.latitude},${selected.longitude}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                background: '#2563eb',
+                color: '#fff',
+                borderRadius: 8,
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: 13,
+                marginBottom: 16,
               }}
-            />
-          )}
-            <hr style={{ margin: '16px 0' }} />
-            <h4>Update Status</h4>
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+              </svg>
+              Rute ke Lokasi
+            </a>
+
+            {/* ── Foto ── */}
+            {selected.foto && (
+              <img
+                src={
+                  selected.foto.startsWith('http')
+                    ? selected.foto
+                    : `https://panic-button-api-311142907128.us-central1.run.app/storage/${selected.foto}`
+                }
+                alt="Foto kejadian"
+                style={{ width: '100%', borderRadius: 10, marginBottom: 16, objectFit: 'cover', maxHeight: 220, display: 'block' }}
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            )}
+
+            <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '4px 0 16px' }} />
+
+            {/* ── Update Status ── */}
+            <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Update Status
+            </p>
             <select value={newStatus} onChange={e => setNewStatus(e.target.value)} style={modal.input}>
               {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <textarea
-              placeholder="Catatan penanganan"
+              placeholder="Catatan penanganan (opsional)"
               value={catatan} onChange={e => setCatatan(e.target.value)}
               style={{ ...modal.input, height: 80, resize: 'vertical' }}
             />
+
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setSelected(null)} style={modal.btnSecondary}>Tutup</button>
               <button onClick={handleUpdate} style={modal.btnPrimary}>Simpan</button>
             </div>
+
           </div>
         </div>
       )}
@@ -179,9 +242,29 @@ export default function Laporan() {
 }
 
 const modal = {
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 },
-  box: { background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 520, maxHeight: '85vh', overflowY: 'auto' },
-  input: { width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 13, marginBottom: 10, boxSizing: 'border-box', display: 'block' },
-  btnPrimary: { padding: '8px 20px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 },
-  btnSecondary: { padding: '8px 20px', background: '#f1f5f9', color: '#374151', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 },
+  overlay: {
+    position: 'fixed', inset: 0,
+    background: 'rgba(15,23,42,0.6)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999,
+  },
+  box: {
+    background: '#fff', borderRadius: 16, padding: 24,
+    width: '100%', maxWidth: 520, maxHeight: '88vh', overflowY: 'auto',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+  },
+  input: {
+    width: '100%', padding: '9px 12px',
+    border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 13,
+    marginBottom: 10, boxSizing: 'border-box', display: 'block',
+    background: '#fafbfc', color: '#334155',
+  },
+  btnPrimary: {
+    padding: '8px 22px', background: '#ef4444', color: '#fff',
+    border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13,
+  },
+  btnSecondary: {
+    padding: '8px 18px', background: '#f1f5f9', color: '#374151',
+    border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13,
+  },
 };
