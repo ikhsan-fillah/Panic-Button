@@ -1,15 +1,34 @@
 const pool = require('../config/db');
 
 exports.statistik = async (req, res) => {
-  const [total] = await pool.query('SELECT COUNT(*) AS total FROM laporan');
-  const [pending] = await pool.query("SELECT COUNT(*) AS total FROM laporan WHERE status = 'pending'");
-  const [diproses] = await pool.query("SELECT COUNT(*) AS total FROM laporan WHERE status = 'diproses'");
-  const [selesai] = await pool.query("SELECT COUNT(*) AS total FROM laporan WHERE status = 'selesai'");
-  const [cancel] = await pool.query("SELECT COUNT(*) AS total FROM laporan WHERE status = 'cancel'");
+  const [total] = await pool.query(
+    'SELECT COUNT(*) AS total FROM laporan'
+  );
+
+  const [pending] = await pool.query(
+    "SELECT COUNT(*) AS total FROM laporan WHERE status = 'pending'"
+  );
+
+  const [menuju] = await pool.query(
+    "SELECT COUNT(*) AS total FROM laporan WHERE status = 'menuju_lokasi'"
+  );
+
+  const [diproses] = await pool.query(
+    "SELECT COUNT(*) AS total FROM laporan WHERE status = 'diproses'"
+  );
+
+  const [selesai] = await pool.query(
+    "SELECT COUNT(*) AS total FROM laporan WHERE status = 'selesai'"
+  );
+
+  const [cancel] = await pool.query(
+    "SELECT COUNT(*) AS total FROM laporan WHERE status = 'cancel'"
+  );
 
   res.json({
     total: total[0].total,
     pending: pending[0].total,
+    menuju_lokasi: menuju[0].total,
     diproses: diproses[0].total,
     selesai: selesai[0].total,
     cancel: cancel[0].total,
@@ -17,7 +36,14 @@ exports.statistik = async (req, res) => {
 };
 
 exports.hariIni = async (req, res) => {
-  const [rows] = await pool.query('SELECT * FROM laporan WHERE DATE(created_at) = CURDATE() ORDER BY created_at DESC');
+  const [rows] = await pool.query(`
+    SELECT *
+    FROM laporan
+    WHERE DATE(created_at + INTERVAL 7 HOUR) =
+          DATE(NOW() + INTERVAL 7 HOUR)
+    ORDER BY created_at DESC
+  `);
+
   res.json(rows);
 };
 
