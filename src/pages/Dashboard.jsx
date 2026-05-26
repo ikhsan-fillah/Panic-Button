@@ -5,18 +5,19 @@ import { AlertTriangle, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 
 export default function Dashboard() {
   const [stats, setStats]       = useState(null);
-  const [hariIni, setHariIni]   = useState(null);
+  const [laporan, setLaporan] = useState([]);
   const [prioritas, setPrioritas] = useState([]);
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
     Promise.all([
       api.get('/dashboard/statistik'),
-      api.get('/dashboard/hari-ini'),
+      api.get('/laporan'),
       api.get('/dashboard/prioritas-tinggi'),
     ]).then(([s, h, p]) => {
+      console.log('hari ini:', h.data);
       setStats(s.data);
-      setHariIni(h.data);
+      setLaporan(h.data || []);
       setPrioritas(p.data || []);
     }).finally(() => setLoading(false));
   }, []);
@@ -38,11 +39,20 @@ export default function Dashboard() {
     { name: 'Cancel',        jumlah: stats?.cancel          ?? 0 },
   ];
 
+  const jumlahHariIni = laporan.filter(l => {
+    const tanggal = new Date(l.created_at);
+
+    return (
+      tanggal.toLocaleDateString('id-ID') ===
+      new Date().toLocaleDateString('id-ID')
+    );
+  }).length;
+
   return (
     <div style={{ padding: 32 }}>
       <h2 style={styles.title}>Dashboard Monitoring</h2>
       <p style={styles.sub}>
-        Laporan hari ini: <b>{Array.isArray(hariIni) ? hariIni.length : 0}</b> kejadian
+        Laporan hari ini: <b>{jumlahHariIni}</b> Kejadian
       </p>
 
       <div style={styles.grid}>
